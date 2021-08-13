@@ -1,8 +1,7 @@
 import React from 'react';
-import './styles/App.css';
+import Process from './Process';
+import '../styles/App.css';
 
-const App = () => (
+const App = () => <Process />;
 
-);
- 
 export default App;

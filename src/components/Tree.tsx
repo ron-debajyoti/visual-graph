@@ -1,15 +1,23 @@
 /**
- * The whole TreeNode data structures of files with their file names
+ * The whole TreeNode data structure
+ * -- constuctor method
+ * -- traversal method
+ * -- canvas render method
  */
 
+import { FileType } from './types';
+
 class TreeNode {
-  public value: string;
+  public fileName: string;
 
-  public descendents: Array<TreeNode>;
+  public fileType: FileType;
 
-  constructor(value: string) {
-    this.value = value;
-    this.descendents = [];
+  public children: Array<TreeNode>;
+
+  constructor(name: string, fileType: string) {
+    this.fileName = name;
+    this.children = [];
+    this.fileType = fileType === 'blob' ? 'leaf' : 'tree';
   }
 }
 
