@@ -5,7 +5,7 @@
  * -- canvas render method
  */
 
-import { File, FileType } from './types';
+import { FileType } from './types';
 
 // const arrayToTreeNode: TreeNode = (input: Array<string>, tree: TreeNode) => {
 //   const name = input.shift();
@@ -18,12 +18,12 @@ class TreeNode {
 
   public fileType: FileType;
 
-  public children: Array<TreeNode>;
+  public children: Array<TreeNode> | null;
 
   constructor(name: string, fileType: string) {
     this.filename = name;
-    this.children = [];
     this.fileType = fileType === 'blob' ? 'leaf' : 'tree';
+    this.children = fileType === 'blob' ? null : [];
     this.find = this.find.bind(this);
   }
 
@@ -31,11 +31,11 @@ class TreeNode {
     if (this.filename === name) {
       return this;
     }
-    if (this.children.length > 0) {
+    if (this.children) {
       let result = null;
       if (this.children.length > 0) {
         this.children.forEach((childNode) => {
-          result = this.find(name);
+          result = childNode.find(name);
         });
         return result;
       }

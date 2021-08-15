@@ -19,37 +19,26 @@ interface Directory {
 const buildTree = (root: TreeNode, childrenFiles: Array<File>): void => {
   if (childrenFiles.length > 0) {
     childrenFiles.forEach((childFile) => {
-      console.log(childFile);
       const dirToFileList = childFile.path.split('/');
       if (dirToFileList.length === 1) {
-        root.children.push(new TreeNode(dirToFileList[0], childFile.type));
+        root.children?.push(new TreeNode(dirToFileList[0], childFile.type));
       } else {
         dirToFileList.reduce((parentFile, currentFile, currentIndex) => {
-          console.log(`${parentFile} ======== ${currentFile}`);
           const file1 = root.find(parentFile);
           const file2 = root.find(currentFile);
 
           if (!file1 && !file2) {
             const node1 = new TreeNode(parentFile, 'tree');
-            const node2 = new TreeNode(
-              currentFile,
-              currentIndex < dirToFileList.length ? 'tree' : 'leaf'
-            );
-            node1.children.push(node2);
-            root.children.push(node1);
+            const node2 = new TreeNode(currentFile, childFile.type);
+            node1.children?.push(node2);
+            root.children?.push(node1);
           } else if (file1 && !file2) {
-            const node2 = new TreeNode(
-              currentFile,
-              currentIndex < dirToFileList.length ? 'tree' : 'leaf'
-            );
-            file1.children.push(node2);
-          } else if (file1 && file2) {
-            return '';
+            const node2 = new TreeNode(currentFile, childFile.type);
+            file1.children?.push(node2);
           }
-          return '';
+          return currentFile;
         });
       }
-      console.log(root);
       return 'done';
     });
   }
@@ -131,9 +120,9 @@ const Process = (props: object) => {
 
   /**
    * Generate the root tree and the whole TreeNode structure
+   * Perhaps render it tooo.
    */
   useEffect(() => {
-    // const rootTree = buildTreeNode('root');
     console.log(rootDir);
     buildTree(rootNode, rootDir.files);
   }, [rootDir]);
