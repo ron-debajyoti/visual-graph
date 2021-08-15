@@ -14,7 +14,14 @@ export interface GitRepository {
   owner: string;
   repo: string;
   branches: Array<Branch>;
-  mainBranch: string;
+  defaultBranch: string;
+}
+
+export interface File {
+  path: string;
+  sha: string;
+  mode: string;
+  type: FileType;
 }
 
 // types used in the project

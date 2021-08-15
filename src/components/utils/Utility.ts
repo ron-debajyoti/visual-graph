@@ -10,6 +10,7 @@ const fetchBranches = async (gitRepo: GitRepository) =>
     .request('GET /repos/{owner}/{repo}/branches', {
       owner: gitRepo.owner,
       repo: gitRepo.repo,
+      per_page: 100,
     })
     .then((response) =>
       response.data.map(
@@ -22,9 +23,16 @@ const fetchBranches = async (gitRepo: GitRepository) =>
       )
     );
 
+const fetchDefaultBranch = (owner: string, repo: string) =>
+  octokit
+    .request('GET /repos/{owner}/{repo}', {
+      owner,
+      repo,
+    })
+    .then((response) => response.data.default_branch);
+
 const fetchData = async (gitRepo: GitRepository) => {
-  const fBr = gitRepo.branches.filter((branch) => branch.name === gitRepo.mainBranch)[0];
-  console.log(fBr);
+  const fBr = gitRepo.branches.filter((branch) => branch.name === gitRepo.defaultBranch)[0];
   const branchSha = fBr.commit.sha;
   return octokit
     .request('GET /repos/{owner}/{repo}/git/trees/{tree_sha}', {
@@ -36,4 +44,4 @@ const fetchData = async (gitRepo: GitRepository) => {
     .then((response) => response.data.tree);
 };
 
-export { fetchBranches, fetchData };
+export { fetchBranches, fetchData, fetchDefaultBranch };
