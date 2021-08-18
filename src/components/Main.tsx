@@ -6,16 +6,20 @@
  * - construct the canvas from the tree
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import TreeNode from './Tree';
 import { FileType, File, GitRepository } from './types';
 import { fetchData, fetchBranches, fetchDefaultBranch } from './utils/Utility';
+import RadialTree from './Canvas';
 
 interface Directory {
   files: Array<File>;
   fileType: FileType;
 }
 
+/*
+  Given the root node, build the whole file TreeNode with children files
+*/
 const buildTree = (root: TreeNode, childrenFiles: Array<File>): void => {
   if (childrenFiles.length > 0) {
     childrenFiles.forEach((childFile) => {
@@ -49,7 +53,7 @@ const buildTree = (root: TreeNode, childrenFiles: Array<File>): void => {
  */
 const Process = (props: object) => {
   /*
-    Initializing hooks used in
+    Initializing hooks used in Process
   */
   const [inputVal, setInputVal] = useState<String>('');
   const [repUpdate, setRepUpdate] = useState<boolean>(false);
@@ -64,8 +68,13 @@ const Process = (props: object) => {
     fileType: 'tree',
   });
 
+  // root TreeNode
   const rootNode: TreeNode = new TreeNode('root', 'tree');
 
+  // SVG element
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+
+  /* Handling Method implementation */
   const handleOnSubmit = (event: React.MouseEvent<HTMLButtonElement, MouseEvent>) => {
     event.preventDefault();
     const splitArray = inputVal.split('/');
@@ -123,8 +132,13 @@ const Process = (props: object) => {
    * Perhaps render it tooo.
    */
   useEffect(() => {
-    console.log(rootDir);
     buildTree(rootNode, rootDir.files);
+    console.log(rootNode);
+    const canvas: HTMLCanvasElement | null = canvasRef.current;
+    if (canvas) {
+      const ctx = canvas.getContext('2d');
+      if (ctx) RadialTree(rootNode, ctx);
+    }
   }, [rootDir]);
 
   return (
@@ -142,6 +156,7 @@ const Process = (props: object) => {
         {' '}
         Submit{' '}
       </button>
+      <canvas ref={canvasRef} id="chart-canvas" width="1000" height="1000" />
     </div>
   );
 };
