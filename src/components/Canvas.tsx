@@ -7,26 +7,26 @@ import * as d3 from 'd3';
 import { HierarchyPointLink, HierarchyPointNode } from 'd3';
 import TreeNode from './Tree';
 
-const RadialTree = (rootNode: TreeNode, ctx: CanvasRenderingContext2D) => {
+const RadialTree = (rootNode: TreeNode, svgElement: SVGSVGElement) => {
   // setting the parameters
-  const { width, height } = ctx.canvas;
+  const width = 900;
+  const height = 900;
 
   const data = d3.hierarchy(rootNode); // the rootNode of our d3 tree
-  const diameter = height * 0.75;
+  const diameter = height * 0.875;
   const radius = diameter / 2;
 
   const treeStructure = d3
     .tree<TreeNode>()
     .size([2 * Math.PI, radius])
-    .separation((a, b) => (a.parent === b.parent ? 10 : 20) / a.depth);
+    .separation((a, b) => (a.parent === b.parent ? 1 : 2) / a.depth);
   // separation() : setting the distance between neighbouring noted
 
   // adding our data to the empty tree structure
   // create the svg with attributes and group element <g>
   const radialTree = treeStructure(data);
   const svg = d3
-    .select('body')
-    .append('svg')
+    .select(svgElement)
     .attr('width', width)
     .attr('height', height)
     .append('g')
@@ -42,11 +42,12 @@ const RadialTree = (rootNode: TreeNode, ctx: CanvasRenderingContext2D) => {
     .radius((d) => d.y);
 
   svg
-    // .attr('fill', 'none')
-    // .attr('stroke', '#555')
+    .attr('fill', 'none')
+    .attr('stroke', '#555')
     // .attr('stroke-opacity', 0.4)
     // .attr('stroke-width', 1.5)
     .selectAll('.line')
+    .enter()
     .data(links)
     .join('path')
     .attr('class', 'link')
@@ -54,18 +55,19 @@ const RadialTree = (rootNode: TreeNode, ctx: CanvasRenderingContext2D) => {
 
   const node = svg
     .selectAll('.node')
+    .enter()
     .data(nodes)
     .join('g')
     .attr('class', 'node')
     .attr('transform', (d) => `rotate(${(d.x * 180) / Math.PI - 90}) translate(${d.y}, 0)`);
 
-  node.append('circle').attr('r', 1);
+  node.append('circle').attr('r', 5);
   node
     .append('text')
     .attr('font-family', 'sans-serif')
     .attr('font-size', 10)
     .attr('stroke-linejoin', 'round')
-    .attr('stroke-width', 3)
+    // .attr('stroke-width', 3)
     .attr('dx', (d) => (d.x < Math.PI ? 8 : -8))
     .attr('dy', '.31em')
     .attr('text-anchor', (d) => (d.x < Math.PI ? 'start' : 'end'))
@@ -74,6 +76,8 @@ const RadialTree = (rootNode: TreeNode, ctx: CanvasRenderingContext2D) => {
       const obj = d.data as TreeNode;
       return obj.filename;
     });
+
+  d3.select(svgElement).exit().remove();
 };
 
 export default RadialTree;

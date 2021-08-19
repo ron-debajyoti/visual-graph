@@ -70,9 +70,7 @@ const Process = (props: object) => {
 
   // root TreeNode
   const rootNode: TreeNode = new TreeNode('root', 'tree');
-
-  // SVG element
-  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const svgRef = useRef<SVGSVGElement>(null);
 
   /* Handling Method implementation */
   const handleOnSubmit = (event: React.MouseEvent<HTMLButtonElement, MouseEvent>) => {
@@ -134,10 +132,8 @@ const Process = (props: object) => {
   useEffect(() => {
     buildTree(rootNode, rootDir.files);
     console.log(rootNode);
-    const canvas: HTMLCanvasElement | null = canvasRef.current;
-    if (canvas) {
-      const ctx = canvas.getContext('2d');
-      if (ctx) RadialTree(rootNode, ctx);
+    if (svgRef.current) {
+      RadialTree(rootNode, svgRef.current);
     }
   }, [rootDir]);
 
@@ -156,7 +152,7 @@ const Process = (props: object) => {
         {' '}
         Submit{' '}
       </button>
-      <canvas ref={canvasRef} id="chart-canvas" width="1000" height="1000" />
+      <svg id="chart-svg" ref={svgRef} />
     </div>
   );
 };
