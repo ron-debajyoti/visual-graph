@@ -7,6 +7,65 @@ import * as d3 from 'd3';
 import { HierarchyPointLink, HierarchyPointNode } from 'd3';
 import TreeNode from './Tree';
 
+const createPathsandNodes = (
+  radialTree: d3.HierarchyPointNode<TreeNode>,
+  svg: d3.Selection<SVGGElement, unknown, null, undefined>
+): void => {
+  // paths between nodes in the tree: represented by links variable
+  const links = radialTree.links();
+  const nodes = radialTree.descendants();
+
+  const individualLink = d3
+    .linkRadial<HierarchyPointLink<TreeNode>, HierarchyPointNode<TreeNode>>()
+    .angle((d) => d.x)
+    .radius((d) => d.y);
+
+  svg
+    .attr('fill', 'none')
+    .attr('stroke', '#555')
+    // .attr('stroke-opacity', 0.4)
+    // .attr('stroke-width', 1.5)
+    .selectAll('.line')
+    .enter()
+    .data(links)
+    .join(
+      (enter) => enter.append('path').attr('class', 'link').attr('d', individualLink),
+      (exit) => exit.remove()
+    );
+
+  const node = svg
+    .selectAll('.node')
+    .enter()
+    .data(nodes)
+    .join(
+      (enter) =>
+        enter
+          .append('g')
+          .attr('class', 'node')
+          .attr('transform', (d) => `rotate(${(d.x * 180) / Math.PI - 90}) translate(${d.y}, 0)`),
+      (exit) => exit.remove()
+    );
+
+  node.append('circle').attr('r', 5);
+
+  // adding the file names for each node
+  node
+    .append('text')
+    .attr('font-family', 'sans-serif')
+    .attr('font-size', 10)
+    .attr('stroke-linejoin', 'round')
+    // .attr('stroke-width', 3)
+    .attr('dx', (d) => (d.x < Math.PI ? 8 : -8))
+    .attr('dy', '.31em')
+    .attr('text-anchor', (d) => (d.x < Math.PI ? 'start' : 'end'))
+    .attr('transform', (d) => (d.x < Math.PI ? null : 'rotate(180)'))
+    .text((d) => {
+      const obj = d.data as TreeNode;
+      return obj.filename;
+    });
+};
+
+// Main Radial Tree generation function
 const RadialTree = (rootNode: TreeNode, svgElement: SVGSVGElement) => {
   // setting the parameters
   const width = 900;
@@ -32,52 +91,8 @@ const RadialTree = (rootNode: TreeNode, svgElement: SVGSVGElement) => {
     .append('g')
     .attr('transform', `translate(${width / 2},${height / 2})`);
 
-  // paths between nodes in the tree: represented by links variable
-  const links = radialTree.links();
-  const nodes = radialTree.descendants();
-
-  const individualLink = d3
-    .linkRadial<HierarchyPointLink<TreeNode>, HierarchyPointNode<TreeNode>>()
-    .angle((d) => d.x)
-    .radius((d) => d.y);
-
-  svg
-    .attr('fill', 'none')
-    .attr('stroke', '#555')
-    // .attr('stroke-opacity', 0.4)
-    // .attr('stroke-width', 1.5)
-    .selectAll('.line')
-    .enter()
-    .data(links)
-    .join('path')
-    .attr('class', 'link')
-    .attr('d', individualLink);
-
-  const node = svg
-    .selectAll('.node')
-    .enter()
-    .data(nodes)
-    .join('g')
-    .attr('class', 'node')
-    .attr('transform', (d) => `rotate(${(d.x * 180) / Math.PI - 90}) translate(${d.y}, 0)`);
-
-  node.append('circle').attr('r', 5);
-  node
-    .append('text')
-    .attr('font-family', 'sans-serif')
-    .attr('font-size', 10)
-    .attr('stroke-linejoin', 'round')
-    // .attr('stroke-width', 3)
-    .attr('dx', (d) => (d.x < Math.PI ? 8 : -8))
-    .attr('dy', '.31em')
-    .attr('text-anchor', (d) => (d.x < Math.PI ? 'start' : 'end'))
-    .attr('transform', (d) => (d.x < Math.PI ? null : 'rotate(180)'))
-    .text((d) => {
-      const obj = d.data as TreeNode;
-      return obj.filename;
-    });
-
-  d3.select(svgElement).exit().remove();
+  createPathsandNodes(radialTree, svg);
+  // d3.select(svgElement).exit().remove();
 };
 
 export default RadialTree;
