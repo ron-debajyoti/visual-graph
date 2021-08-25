@@ -1,3 +1,4 @@
+/* eslint-disable no-underscore-dangle */
 /**
  * Library/implementation of the various rendering of tree in canvas and d3.js
  */
@@ -9,7 +10,9 @@ import TreeNode from './Tree';
 
 const createPathsandNodes = (
   radialTree: d3.HierarchyPointNode<TreeNode>,
-  svg: d3.Selection<SVGGElement, unknown, null, undefined>
+  svgElement: SVGSVGElement,
+  height: number,
+  width: number
 ): void => {
   // paths between nodes in the tree: represented by links variable
   const links = radialTree.links();
@@ -20,13 +23,14 @@ const createPathsandNodes = (
     .angle((d) => d.x)
     .radius((d) => d.y);
 
+  let svg = d3.select<SVGGElement, any>(svgElement).attr('width', width).attr('height', height);
+  svg = svg.append('g').attr('transform', `translate(${width / 2},${height / 2})`);
   svg
     .attr('fill', 'none')
     .attr('stroke', '#555')
     // .attr('stroke-opacity', 0.4)
     // .attr('stroke-width', 1.5)
     .selectAll('.line')
-    .enter()
     .data(links)
     .join(
       (enter) => enter.append('path').attr('class', 'link').attr('d', individualLink),
@@ -35,7 +39,6 @@ const createPathsandNodes = (
 
   const node = svg
     .selectAll('.node')
-    .enter()
     .data(nodes)
     .join(
       (enter) =>
@@ -68,8 +71,8 @@ const createPathsandNodes = (
 // Main Radial Tree generation function
 const RadialTree = (rootNode: TreeNode, svgElement: SVGSVGElement) => {
   // setting the parameters
-  const width = 900;
-  const height = 900;
+  const width = svgElement.clientWidth;
+  const height = svgElement.clientHeight;
 
   const data = d3.hierarchy(rootNode); // the rootNode of our d3 tree
   const diameter = height * 0.875;
@@ -78,20 +81,13 @@ const RadialTree = (rootNode: TreeNode, svgElement: SVGSVGElement) => {
   const treeStructure = d3
     .tree<TreeNode>()
     .size([2 * Math.PI, radius])
-    .separation((a, b) => (a.parent === b.parent ? 1 : 2) / a.depth);
+    .separation((a, b) => (a.parent === b.parent ? 2 : 4) / a.depth);
   // separation() : setting the distance between neighbouring noted
 
   // adding our data to the empty tree structure
   // create the svg with attributes and group element <g>
   const radialTree = treeStructure(data);
-  const svg = d3
-    .select(svgElement)
-    .attr('width', width)
-    .attr('height', height)
-    .append('g')
-    .attr('transform', `translate(${width / 2},${height / 2})`);
-
-  createPathsandNodes(radialTree, svg);
+  createPathsandNodes(radialTree, svgElement, height, width);
   // d3.select(svgElement).exit().remove();
 };
 
