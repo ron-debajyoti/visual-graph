@@ -7,10 +7,22 @@
  */
 
 import React, { useState, useEffect, useRef } from 'react';
+import styled from 'styled-components/macro';
 import TreeNode from './Tree';
 import { FileType, File, GitRepository } from './types';
 import { fetchData, fetchBranches, fetchDefaultBranch } from './utils/Utility';
 import RadialTree from './Canvas';
+
+const MainDiv = styled.div`
+  display: flex;
+  flex-flow: column;
+  height: 100%;
+  width: 100%;
+`;
+
+const CanvasSVG = styled.svg`
+  height: 100%;
+`;
 
 interface Directory {
   files: Array<File>;
@@ -138,7 +150,7 @@ const Process = (props: object) => {
   }, [rootDir]);
 
   return (
-    <div>
+    <MainDiv>
       <label htmlFor="enter-repo">
         Enter repository:
         <input
@@ -152,8 +164,8 @@ const Process = (props: object) => {
         {' '}
         Submit{' '}
       </button>
-      <svg id="chart-svg" ref={svgRef} />
-    </div>
+      <CanvasSVG id="chart-svg" ref={svgRef} />
+    </MainDiv>
   );
 };
 
