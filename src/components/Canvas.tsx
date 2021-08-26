@@ -83,13 +83,20 @@ const createPathsandNodes = (
 
     newNodes
       .append('circle')
-      .attr('r', 4.5)
-      .on('click', (event, d) => {
+      .attr('r', 5)
+      .attr('fill', (d) => {
+        if (d.children) {
+          return '#03adfc';
+        }
+        return '#555';
+      })
+      .on('click', (event) => {
+        const d: any = d3.select(event.target);
         console.log('------------>>>>>>>>>>', d);
         const altChildren = d.data.children || [];
         const { children } = d.data;
         d.data.children = altChildren;
-        // d.data.children = children;
+        d.data.altChildren = children;
         newData();
       });
 
@@ -105,7 +112,7 @@ const createPathsandNodes = (
       .append('text')
       .attr('font-family', 'sans-serif')
       .attr('font-size', 10)
-      .attr('dy', '.31em')
+      .attr('dy', '1em')
       .text((d) => {
         const obj = d.data as TreeNode;
         return obj.filename;
