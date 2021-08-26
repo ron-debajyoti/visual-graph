@@ -18,19 +18,52 @@ const createPathsandNodes = (
   const links = radialTree.links();
   const nodes = radialTree.descendants();
 
+  const newNodes: d3.HierarchyPointNode<TreeNode>[] = nodes.map((d) => {
+    const dNew = { ...d };
+    dNew.y = dNew.depth * 65;
+    return dNew;
+  });
+
   const individualLink = d3
     .linkRadial<HierarchyPointLink<TreeNode>, HierarchyPointNode<TreeNode>>()
     .angle((d) => d.x)
-    .radius((d) => d.y);
+    .radius((d) => d.depth * 65);
 
-  let svg = d3.select<SVGGElement, any>(svgElement).attr('width', width).attr('height', height);
-  svg = svg.append('g').attr('transform', `translate(${width / 2},${height / 2})`);
+  const svgOutline = d3
+    .select<SVGGElement, any>(svgElement)
+    // .attr('preserveAspectRatio', 'xMinYmIn meet')
+    .attr('viewBox', `0 0 ${width} ${height}`);
+  const svg = svgOutline.append('g').attr('transform', `translate(${width / 2},${height / 2})`);
+
+  /* Calling zoom on <g> but attaching the svgOutline 
+  because mouse pointer doesnt automatically point to <g> 
+  */
+  svgOutline.call(
+    d3
+      .zoom<SVGGElement, any>()
+      .extent([
+        [0, 0],
+        [width, height],
+      ])
+      .scaleExtent([1, 8])
+      .on('zoom', (event) => {
+        console.log(event);
+        svg.attr(
+          'transform',
+          `translate(${width / 2} ,${height / 2}) 
+          scale(${event.transform.k}) 
+          translate(${event.transform.x},${event.transform.y})`
+        );
+      })
+  );
+
+  // Add link paths and nodes
   svg
     .attr('fill', 'none')
     .attr('stroke', '#555')
     // .attr('stroke-opacity', 0.4)
     // .attr('stroke-width', 1.5)
-    .selectAll('.line')
+    .selectAll<SVGGElement, any>('.line')
     .data(links)
     .join(
       (enter) => enter.append('path').attr('class', 'link').attr('d', individualLink),
@@ -38,8 +71,8 @@ const createPathsandNodes = (
     );
 
   const node = svg
-    .selectAll('.node')
-    .data(nodes)
+    .selectAll<SVGGElement, any>('.node')
+    .data(newNodes)
     .join(
       (enter) =>
         enter
@@ -49,7 +82,26 @@ const createPathsandNodes = (
       (exit) => exit.remove()
     );
 
-  node.append('circle').attr('r', 5);
+  node
+    .append('circle')
+    .attr('r', 5)
+    .attr('fill', (d) => {
+      if (d.children) {
+        return '#03adfc';
+      }
+      return '#555';
+    });
+
+  // Event Handling of mouse over and mouse out
+  node.on('mouseover', (event) => {
+    console.log(event);
+    d3.select(event.target).attr('r', 10);
+  });
+
+  node.on('mouseout', (event) => {
+    console.log(event);
+    d3.select(event.target).attr('r', 5);
+  });
 
   // adding the file names for each node
   node
@@ -59,7 +111,7 @@ const createPathsandNodes = (
     .attr('stroke-linejoin', 'round')
     // .attr('stroke-width', 3)
     .attr('dx', (d) => (d.x < Math.PI ? 8 : -8))
-    .attr('dy', '.31em')
+    .attr('dy', '1.5em')
     .attr('text-anchor', (d) => (d.x < Math.PI ? 'start' : 'end'))
     .attr('transform', (d) => (d.x < Math.PI ? null : 'rotate(180)'))
     .text((d) => {
