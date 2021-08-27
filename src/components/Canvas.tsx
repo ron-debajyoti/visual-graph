@@ -8,33 +8,26 @@ import * as d3 from 'd3';
 import { HierarchyPointLink, HierarchyPointNode } from 'd3';
 import TreeNode from './Tree';
 
-const createPathsandNodes = (
-  radialTree: d3.HierarchyPointNode<TreeNode>,
-  svgElement: SVGSVGElement,
+interface ExtendedTreeHierarchy {
+  rootNode: d3.HierarchyPointNode<TreeNode>;
+  x0: number;
+  y0: number;
+  id: number;
+}
+
+const svgChartGenerator = (
+  svgOutline: d3.Selection<SVGGElement, any, null, undefined>,
+  svg: d3.Selection<SVGGElement, any, null, undefined>,
   height: number,
-  width: number
-): void => {
-  // paths between nodes in the tree: represented by links variable
-  const links = radialTree.links();
-  const nodes = radialTree.descendants();
-
-  const newNodes: d3.HierarchyPointNode<TreeNode>[] = nodes.map((d) => {
-    const dNew = { ...d };
-    dNew.y = dNew.depth * 65;
-    return dNew;
-  });
-
-  const individualLink = d3
-    .linkRadial<HierarchyPointLink<TreeNode>, HierarchyPointNode<TreeNode>>()
-    .angle((d) => d.x)
-    .radius((d) => d.depth * 65);
-
-  const svgOutline = d3
-    .select<SVGGElement, any>(svgElement)
-    // .attr('preserveAspectRatio', 'xMinYmIn meet')
-    .attr('viewBox', `0 0 ${width} ${height}`);
-  const svg = svgOutline.append('g').attr('transform', `translate(${width / 2},${height / 2})`);
-
+  width: number,
+  graphLinks: d3.HierarchyPointLink<TreeNode>[],
+  graphNodes: d3.HierarchyPointNode<TreeNode>[],
+  graphLinkFunction: d3.LinkRadial<
+    any,
+    d3.HierarchyPointLink<TreeNode>,
+    d3.HierarchyPointNode<TreeNode>
+  >
+) => {
   /* Calling zoom on <g> but attaching the svgOutline 
   because mouse pointer doesnt automatically point to <g> 
   */
@@ -64,15 +57,15 @@ const createPathsandNodes = (
     // .attr('stroke-opacity', 0.4)
     // .attr('stroke-width', 1.5)
     .selectAll<SVGGElement, any>('.line')
-    .data(links)
+    .data(graphLinks)
     .join(
-      (enter) => enter.append('path').attr('class', 'link').attr('d', individualLink),
+      (enter) => enter.append('path').attr('class', 'link').attr('d', graphLinkFunction),
       (exit) => exit.remove()
     );
 
   const node = svg
     .selectAll<SVGGElement, any>('.node')
-    .data(newNodes)
+    .data(graphNodes)
     .join(
       (enter) =>
         enter
@@ -94,13 +87,22 @@ const createPathsandNodes = (
 
   // Event Handling of mouse over and mouse out
   node.on('mouseover', (event) => {
-    console.log(event);
     d3.select(event.target).attr('r', 10);
   });
 
   node.on('mouseout', (event) => {
-    console.log(event);
     d3.select(event.target).attr('r', 5);
+  });
+
+  node.on('click', (event, d) => {
+    console.log(d);
+    // if (d.children) {
+    //   d._children = d.children;
+    //   d.children = null;
+    // } else {
+    //   d._children = d.children;
+    //   d.children = null;
+    // }
   });
 
   // adding the file names for each node
@@ -118,6 +120,60 @@ const createPathsandNodes = (
       const obj = d.data as TreeNode;
       return obj.filename;
     });
+};
+
+const createPathsandNodes = (
+  radialTree: d3.HierarchyPointNode<TreeNode>,
+  svgElement: SVGSVGElement,
+  height: number,
+  width: number
+): void => {
+  // paths between nodes in the tree: represented by links variable
+  console.log(radialTree);
+
+  // let i = 0;
+  // const root: any = radialTree;
+  // root.x0 = height / 2;
+  // root.y0 = 0;
+
+  // const duration = 350;
+
+  // const updateRadialTree = (source: ExtendedTreeHierarchy) => {
+  //   const nodes = root.rootNode.descendants();
+  //   const link = root.rootNode.links();
+
+  //   const newNodes = nodes.map((d) => {
+  //     const dNew = { ...d };
+  //     dNew.y = dNew.depth * 65;
+  //     return dNew;
+  //   });
+
+  //   const gNode = svg.selectAll('g.node').data(newNodes, (d: any) => { return d.id || (d.id = ++i);})
+  //   const nodeEnter = gNode.enter().append('g').attr('class', 'node').on('click')
+
+  //   };
+
+  const links = radialTree.links();
+  const nodes = radialTree.descendants();
+
+  const newNodes: d3.HierarchyPointNode<TreeNode>[] = nodes.map((d) => {
+    const dNew = { ...d };
+    dNew.y = dNew.depth * 65;
+    return dNew;
+  });
+
+  const individualLink = d3
+    .linkRadial<HierarchyPointLink<TreeNode>, HierarchyPointNode<TreeNode>>()
+    .angle((d) => d.x)
+    .radius((d) => d.depth * 65);
+
+  const svgOutline = d3
+    .select<SVGGElement, any>(svgElement)
+    // .attr('preserveAspectRatio', 'xMinYmIn meet')
+    .attr('viewBox', `0 0 ${width} ${height}`);
+  const svg = svgOutline.append('g').attr('transform', `translate(${width / 2},${height / 2})`);
+
+  svgChartGenerator(svgOutline, svg, height, width, links, newNodes, individualLink);
 };
 
 // Main Radial Tree generation function
