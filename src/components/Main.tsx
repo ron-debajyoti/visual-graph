@@ -8,6 +8,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import styled from 'styled-components/macro';
+import * as d3 from 'd3';
 import TreeNode from './Tree';
 import { FileType, File, GitRepository } from './types';
 import { fetchData, fetchBranches, fetchDefaultBranch } from './utils/Utility';
@@ -22,6 +23,7 @@ const MainDiv = styled.div`
 
 const CanvasSVG = styled.svg`
   height: 100%;
+  width: 100%;
 `;
 
 interface Directory {
@@ -143,8 +145,10 @@ const Process = (props: object) => {
    */
   useEffect(() => {
     buildTree(rootNode, rootDir.files);
-    console.log(rootNode);
+
     if (svgRef.current) {
+      const svgHost = d3.select(svgRef.current);
+      svgHost.select('g').remove();
       RadialTree(rootNode, svgRef.current);
     }
   }, [rootDir]);
