@@ -5,6 +5,7 @@
  * -- canvas render method
  */
 
+import { HierarchyPointNode } from 'd3';
 import { FileType } from './types';
 
 // const arrayToTreeNode: TreeNode = (input: Array<string>, tree: TreeNode) => {
@@ -20,10 +21,13 @@ class TreeNode {
 
   public children: Array<TreeNode> | null;
 
+  public tempChildren: HierarchyPointNode<TreeNode>[];
+
   constructor(name: string, fileType: string) {
     this.filename = name;
     this.fileType = fileType === 'blob' ? 'leaf' : 'tree';
     this.children = fileType === 'blob' ? null : [];
+    this.tempChildren = [];
     this.find = this.find.bind(this);
   }
 

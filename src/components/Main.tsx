@@ -19,11 +19,13 @@ const MainDiv = styled.div`
   flex-flow: column;
   height: 100%;
   width: 100%;
+  overflow: auto;
 `;
 
 const CanvasSVG = styled.svg`
   height: 100%;
   width: 100%;
+  overflow-y: auto;
 `;
 
 interface Directory {
