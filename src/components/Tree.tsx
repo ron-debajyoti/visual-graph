@@ -21,13 +21,13 @@ class TreeNode {
 
   public children: Array<TreeNode> | null;
 
-  public tempChildren: HierarchyPointNode<TreeNode>[];
+  public tempChildren: HierarchyPointNode<TreeNode>[] | null;
 
   constructor(name: string, fileType: string) {
     this.filename = name;
     this.fileType = fileType === 'blob' ? 'leaf' : 'tree';
     this.children = fileType === 'blob' ? null : [];
-    this.tempChildren = [];
+    this.tempChildren = null;
     this.find = this.find.bind(this);
   }
 

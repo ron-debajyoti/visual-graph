@@ -149,8 +149,15 @@ const Process = (props: object) => {
     buildTree(rootNode, rootDir.files);
 
     if (svgRef.current) {
-      const svgHost = d3.select(svgRef.current);
-      svgHost.select('g').remove();
+      const svgHost = d3.select<SVGGElement, any>('g.main-group');
+      const box = svgHost.node()?.getBBox();
+      if (box) {
+        svgHost
+          .remove()
+          .attr('width', box.width)
+          .attr('height', box.height)
+          .attr('viewBox', `${box.x} ${box.y} ${box.width} ${box.height}`);
+      }
       RadialTree(rootNode, svgRef.current);
     }
   }, [rootDir]);
