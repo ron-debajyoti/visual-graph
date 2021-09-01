@@ -20,22 +20,28 @@ const radialChartGenerator = (
   >
 ) => {
   // Add link paths and nodes
-  const g = svg.append('g').attr('class', 'main-group');
-  const svgLink = g
+  const mainGroupElement = svg.append('g').attr('class', 'main-group');
+  const svgLinkGroup = mainGroupElement
     .append('g')
     .attr('fill', 'none')
     .attr('stroke', '#555')
     .attr('stroke-opacity', 0.4)
     .attr('stroke-width', 1.5);
-  const svgNode = g.append('g').attr('stroke-linejoin', 'round').attr('stroke-width', 3);
+  const svgNodeGroup = mainGroupElement
+    .append('g')
+    .attr('stroke-linejoin', 'round')
+    .attr('stroke-width', 3);
 
   const update = (animate: boolean = true) => {
     const radialTree = tree(data);
     const links = radialTree.links();
     const nodes = radialTree.descendants();
 
-    // making all links
-    const linkGroup = svgLink.selectAll<SVGGElement, any>('path').data(links);
+    console.log(radialTree);
+    /* 
+      Making all links
+    */
+    const linkGroup = svgLinkGroup.selectAll<SVGGElement, any>('path').data(links);
     linkGroup.exit().remove();
     linkGroup
       .enter()
@@ -48,7 +54,7 @@ const radialChartGenerator = (
           .radius((d) => 0.1)
       );
 
-    const allLinks = svgLink.selectAll<SVGGElement, any>('path');
+    const allLinks = svgLinkGroup.selectAll<SVGGElement, any>('path');
     allLinks
       .transition()
       .duration(animate ? 450 : 0)
@@ -64,13 +70,15 @@ const radialChartGenerator = (
       })
       .attr('d', graphLinkFunction);
 
-    // making all nodes
-    const nodeGroup = svgNode.selectAll<SVGGElement, any>('g').data(nodes);
+    /*
+     Making all nodes
+    */
+    const nodeGroup = svgNodeGroup.selectAll<SVGGElement, any>('g').data(nodes);
     nodeGroup.exit().remove();
     const node = nodeGroup.enter().append('g');
-
+    console.log(node);
     const allNodes = animate
-      ? svgNode
+      ? svgNodeGroup
           .selectAll<SVGGElement, any>('g')
           .transition()
           .duration(animate ? 450 : 0)
@@ -84,8 +92,9 @@ const radialChartGenerator = (
                 .attr('viewBox', `${box.x} ${box.y} ${box.width} ${box.height}`);
             }
           })
-      : svgNode.selectAll<SVGGElement, any>('g');
+      : svgNodeGroup.selectAll<SVGGElement, any>('g');
 
+    // const allNodes = svgNode.selectAll<SVGGElement, any>('g');
     allNodes.attr('transform', (d) => `rotate(${(d.x * 180) / Math.PI - 90}) translate(${d.y}, 0)`);
     node
       .append('circle')
@@ -95,27 +104,34 @@ const radialChartGenerator = (
         const { children } = d;
         d.children = tempChildren;
         d.data.tempChildren = children;
-        console.log(d);
         update();
-      })
-      .attr('fill', (d) => {
-        if (d.children) {
-          return '#03adfc';
-        }
-        return '#555';
       });
+
+    svgNodeGroup.selectAll<SVGGElement, any>('g circle').attr('fill', (d) => {
+      if (d.data.children) {
+        return '#03adfc';
+      }
+      return '#555';
+    });
 
     node
       .append('text')
-      .attr('font-family', 'sans-serif')
+      .attr('font-size', '11')
       .attr('fill', '#999')
-      .attr('font-size', 12)
       .attr('dy', '0.31em')
       .text((d) => d.data.filename)
-      .lower()
-      .attr('x', (d) => (d.x < Math.PI === !d.children ? 6 : -6))
+      .attr('x', (d) => (d.x < Math.PI === !d.children ? 8 : -8))
       .attr('text-anchor', (d) => (d.x < Math.PI === !d.children ? 'start' : 'end'))
-      .attr('transform', (d) => (d.x >= Math.PI ? 'rotate(180)' : null));
+      .attr('transform', (d) => (d.x >= Math.PI ? 'rotate(180)' : null))
+      .clone(true)
+      .lower()
+      .attr('stroke', 'white');
+
+    // svgNode
+    //   .selectAll<SVGGElement, any>('g text')
+    //   .attr('x', (d) => (d.x < Math.PI === !d.children ? 8 : -8))
+    //   .attr('text-anchor', (d) => (d.x < Math.PI === !d.children ? 'start' : 'end'))
+    //   .attr('transform', (d) => (d.x >= Math.PI ? 'rotate(180)' : null));
 
     // Event Handling of mouse over and mouse out
     node.on('mouseover', (event) => {
@@ -150,7 +166,8 @@ const createPathsandNodes = (
     .style('width', '100%')
     .style('height', '100%')
     .style('padding', '10px')
-    .style('box-sizing', 'border-box');
+    .style('box-sizing', 'border-box')
+    .attr('font', '12px sans-serif');
   // const svg = baseSVG.append('g').attr('transform', `translate(${width / 2},${height / 2})`);
 
   /* Calling zoom on <g> but attaching the svgOutline 
