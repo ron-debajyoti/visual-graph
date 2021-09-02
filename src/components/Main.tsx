@@ -120,7 +120,6 @@ const Process = (props: object) => {
 
     updateGitRepo()
       .then((updatedGitRepo) => {
-        console.log('->>>>>>>>>>>>>>>>>', updatedGitRepo);
         setGitRepository(updatedGitRepo);
         return fetchData(updatedGitRepo);
       })

@@ -1,14 +1,22 @@
+/* eslint-disable no-mixed-operators */
 /* eslint-disable no-param-reassign */
-/* eslint-disable no-underscore-dangle */
 /**
  * Library/implementation of the various rendering of tree in canvas and d3.js
  */
 
-import React, { useState } from 'react';
 import * as d3 from 'd3';
 import { HierarchyPointLink, HierarchyPointNode } from 'd3';
 import TreeNode from './Tree';
 
+/**
+ * 
+ * @param svg The base SVG of the radial chart
+ * @param tree The d3 tree hierarchy used
+ * @param data The tree data in the form of TreeNode data structure
+ * @param graphLinkFunction The link function connecting nodes and links
+
+ * Generates the whole radial chart
+ */
 const radialChartGenerator = (
   svg: d3.Selection<SVGGElement, any, null, undefined>,
   tree: d3.TreeLayout<TreeNode>,
@@ -19,7 +27,7 @@ const radialChartGenerator = (
     d3.HierarchyPointNode<TreeNode>
   >
 ) => {
-  // Add link paths and nodes
+  // The main group Element containing the link group and nodes group
   const mainGroupElement = svg.append('g').attr('class', 'main-group');
   const svgLinkGroup = mainGroupElement
     .append('g')
@@ -32,18 +40,21 @@ const radialChartGenerator = (
     .attr('stroke-linejoin', 'round')
     .attr('stroke-width', 3);
 
+  /**
+   * @param animate boolean
+   *
+   * constructs the radial chart and updates it according to
+   * data changes in the radial tree
+   */
   const update = (animate: boolean = true) => {
-    const radialTree = tree(data);
-    const links = radialTree.links();
-    const nodes = radialTree.descendants();
+    const root = tree(data);
+    const linkData = root.links();
+    const links = svgLinkGroup
+      .selectAll<SVGGElement, any>('path')
+      .data(linkData, (d) => `${d.source.data.filename}_${d.target.data.filename}`);
 
-    console.log(radialTree);
-    /* 
-      Making all links
-    */
-    const linkGroup = svgLinkGroup.selectAll<SVGGElement, any>('path').data(links);
-    linkGroup.exit().remove();
-    linkGroup
+    links.exit().remove();
+    links
       .enter()
       .append('path')
       .attr(
@@ -60,7 +71,7 @@ const radialChartGenerator = (
       .duration(animate ? 450 : 0)
       .ease(d3.easeLinear)
       .on('end', () => {
-        const box = svg.select<SVGGElement>('g').node()?.getBBox();
+        const box = mainGroupElement.node()?.getBBox();
         if (box) {
           svg
             .transition()
@@ -70,13 +81,19 @@ const radialChartGenerator = (
       })
       .attr('d', graphLinkFunction);
 
-    /*
-     Making all nodes
-    */
-    const nodeGroup = svgNodeGroup.selectAll<SVGGElement, any>('g').data(nodes);
-    nodeGroup.exit().remove();
-    const node = nodeGroup.enter().append('g');
-    console.log(node);
+    /**
+     * Nodes
+     */
+    const nodesData = root.descendants().reverse();
+    const nodes = svgNodeGroup.selectAll<SVGGElement, any>('g').data(nodesData, (d) => {
+      if (d.parent) {
+        return d.parent.data.filename + d.data.filename;
+      }
+      return d.data.filename;
+    });
+
+    nodes.exit().remove();
+    const newNodes = nodes.enter().append('g');
     const allNodes = animate
       ? svgNodeGroup
           .selectAll<SVGGElement, any>('g')
@@ -84,7 +101,7 @@ const radialChartGenerator = (
           .duration(animate ? 450 : 0)
           .ease(d3.easeLinear)
           .on('end', () => {
-            const box = svg.select<SVGGElement>('g').node()?.getBBox();
+            const box = mainGroupElement.node()?.getBBox();
             if (box) {
               svg
                 .transition()
@@ -93,52 +110,49 @@ const radialChartGenerator = (
             }
           })
       : svgNodeGroup.selectAll<SVGGElement, any>('g');
+    allNodes.attr(
+      'transform',
+      (d) => `
+    rotate(${(d.x * 180) / Math.PI - 90})
+    translate(${d.y},0)`
+    );
 
-    // const allNodes = svgNode.selectAll<SVGGElement, any>('g');
-    allNodes.attr('transform', (d) => `rotate(${(d.x * 180) / Math.PI - 90}) translate(${d.y}, 0)`);
-    node
+    newNodes
       .append('circle')
       .attr('r', 5)
-      .on('click', (event, d: any) => {
+      .on('click', (event, d) => {
         const { tempChildren } = d.data || [];
         const { children } = d;
-        d.children = tempChildren;
-        d.data.tempChildren = children;
+        const temp = children;
+        d.children = tempChildren || undefined;
+        d.data.tempChildren = temp || null;
         update();
       });
 
-    svgNodeGroup.selectAll<SVGGElement, any>('g circle').attr('fill', (d) => {
-      if (d.data.children) {
-        return '#03adfc';
-      }
-      return '#555';
-    });
+    svgNodeGroup
+      .selectAll<SVGGElement, any>('g circle')
+      .attr('fill', (d) => (d.data.children ? '#03adfc' : '#555'));
 
-    node
+    newNodes
       .append('text')
       .attr('font-size', '11')
-      .attr('fill', '#999')
       .attr('dy', '0.31em')
       .text((d) => d.data.filename)
-      .attr('x', (d) => (d.x < Math.PI === !d.children ? 8 : -8))
-      .attr('text-anchor', (d) => (d.x < Math.PI === !d.children ? 'start' : 'end'))
-      .attr('transform', (d) => (d.x >= Math.PI ? 'rotate(180)' : null))
       .clone(true)
-      .lower()
-      .attr('stroke', 'white');
+      .lower();
 
-    // svgNode
-    //   .selectAll<SVGGElement, any>('g text')
-    //   .attr('x', (d) => (d.x < Math.PI === !d.children ? 8 : -8))
-    //   .attr('text-anchor', (d) => (d.x < Math.PI === !d.children ? 'start' : 'end'))
-    //   .attr('transform', (d) => (d.x >= Math.PI ? 'rotate(180)' : null));
+    svgNodeGroup
+      .selectAll<SVGGElement, any>('g text')
+      .attr('x', (d) => (d.x < Math.PI === !d.children ? 9 : -9))
+      .attr('text-anchor', (d) => (d.x < Math.PI === !d.children ? 'start' : 'end'))
+      .attr('transform', (d) => (d.x >= Math.PI ? 'rotate(180)' : null));
 
     // Event Handling of mouse over and mouse out
-    node.on('mouseover', (event) => {
+    newNodes.on('mouseover', (event) => {
       d3.select(event.target).attr('r', 10);
     });
 
-    node.on('mouseout', (event) => {
+    newNodes.on('mouseout', (event) => {
       d3.select(event.target).attr('r', 5);
     });
   };
