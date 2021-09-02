@@ -71,7 +71,7 @@ const radialChartGenerator = (
       .duration(animate ? 450 : 0)
       .ease(d3.easeLinear)
       .on('end', () => {
-        const box = mainGroupElement.node()?.getBBox();
+        const box = svg.node()?.getBBox();
         if (box) {
           svg
             .transition()
@@ -101,7 +101,7 @@ const radialChartGenerator = (
           .duration(animate ? 450 : 0)
           .ease(d3.easeLinear)
           .on('end', () => {
-            const box = mainGroupElement.node()?.getBBox();
+            const box = svg.node()?.getBBox();
             if (box) {
               svg
                 .transition()
@@ -147,7 +147,20 @@ const radialChartGenerator = (
       .attr('text-anchor', (d) => (d.x < Math.PI === !d.children ? 'start' : 'end'))
       .attr('transform', (d) => (d.x >= Math.PI ? 'rotate(180)' : null));
 
-    // Event Handling of mouse over and mouse out
+    // Event Handling of zoom, mouse over and mouse out
+    svg.call(
+      d3
+        .zoom<SVGGElement, any>()
+        .scaleExtent([1, 8])
+        .on('zoom', (event) => {
+          mainGroupElement.attr(
+            'transform',
+            `scale(${event.transform.k})
+            translate(${event.transform.x},${event.transform.y})`
+          );
+        })
+    );
+
     newNodes.on('mouseover', (event) => {
       d3.select(event.target).attr('r', 10);
     });
@@ -182,28 +195,10 @@ const createPathsandNodes = (
     .style('padding', '10px')
     .style('box-sizing', 'border-box')
     .attr('font', '12px sans-serif');
-  // const svg = baseSVG.append('g').attr('transform', `translate(${width / 2},${height / 2})`);
 
   /* Calling zoom on <g> but attaching the svgOutline 
   because mouse pointer doesnt automatically point to <g> 
   */
-  // baseSVG.call(
-  //   d3
-  //     .zoom<SVGGElement, any>()
-  //     .extent([
-  //       [0, 0],
-  //       [width, height],
-  //     ])
-  //     .scaleExtent([1, 8])
-  //     .on('zoom', (event) => {
-  //       svg.attr(
-  //         'transform',
-  //         `translate(${width / 2} ,${height / 2})
-  //         scale(${event.transform.k})
-  //         translate(${event.transform.x},${event.transform.y})`
-  //       );
-  //     })
-  // );
 
   radialChartGenerator(baseSVG, tree, data, individualLink);
 };
