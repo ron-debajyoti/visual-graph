@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 /**
  * props: project directory details
  * Implementation:
@@ -107,17 +108,17 @@ const Process = (props: object) => {
     setInputVal(inputText);
   };
 
+  async function updateGitRepo(): Promise<GitRepository> {
+    const defaultBranch = await fetchDefaultBranch(gitRepository.owner, gitRepository.repo);
+    const branches = await fetchBranches(gitRepository);
+    return { ...gitRepository, branches, defaultBranch };
+  }
+
   useEffect(() => {
     /*
       Fetching the initial data based on master branch
         - get and update branches, mainBranch in gitRepository
     */
-    async function updateGitRepo(): Promise<GitRepository> {
-      const defaultBranch = await fetchDefaultBranch(gitRepository.owner, gitRepository.repo);
-      const branches = await fetchBranches(gitRepository);
-      return { ...gitRepository, branches, defaultBranch };
-    }
-
     updateGitRepo()
       .then((updatedGitRepo) => {
         setGitRepository(updatedGitRepo);

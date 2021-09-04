@@ -8,6 +8,25 @@ import * as d3 from 'd3';
 import { HierarchyPointLink, HierarchyPointNode } from 'd3';
 import TreeNode from './Tree';
 
+const collapsibleNode = (d: d3.HierarchyPointNode<TreeNode>) => {
+  if (d.children) {
+    const { tempChildren } = d.data || [];
+    const { children } = d;
+    const temp = children;
+    d.children = tempChildren || undefined;
+    d.data.tempChildren = temp || null;
+  }
+  if (d.data.tempChildren) {
+    d.data.tempChildren.forEach((item) => collapsibleNode(item));
+  }
+};
+
+const collapseTreeCheck = (root: d3.HierarchyPointNode<TreeNode>) => {
+  if (root.children && root.children?.length > 20) {
+    root.children?.forEach((d) => collapsibleNode(d));
+  }
+};
+
 /**
  * 
  * @param svg The base SVG of the radial chart
@@ -17,7 +36,7 @@ import TreeNode from './Tree';
 
  * Generates the whole radial chart
  */
-const radialChartGenerator = (
+const RadialChartGenerator = (
   svg: d3.Selection<SVGGElement, any, null, undefined>,
   tree: d3.TreeLayout<TreeNode>,
   data: d3.HierarchyNode<TreeNode>,
@@ -26,7 +45,7 @@ const radialChartGenerator = (
     d3.HierarchyPointLink<TreeNode>,
     d3.HierarchyPointNode<TreeNode>
   >
-) => {
+): void => {
   // The main group Element containing the link group and nodes group
   const mainGroupElement = svg.append('g').attr('class', 'main-group');
   const svgLinkGroup = mainGroupElement
@@ -40,14 +59,19 @@ const radialChartGenerator = (
     .attr('stroke-linejoin', 'round')
     .attr('stroke-width', 3);
 
+  let root = tree(data);
+  collapseTreeCheck(root);
+
   /**
    * @param animate boolean
    *
    * constructs the radial chart and updates it according to
    * data changes in the radial tree
    */
-  const update = (animate: boolean = true) => {
-    const root = tree(data);
+  const update = (animate: boolean = true): void => {
+    root = tree(data);
+    // console.log('COLlAPSE CHECK DONE: ', root);
+
     const linkData = root.links();
     const links = svgLinkGroup
       .selectAll<SVGGElement, any>('path')
@@ -121,12 +145,14 @@ const radialChartGenerator = (
       .append('circle')
       .attr('r', 5)
       .on('click', (event, d) => {
-        const { tempChildren } = d.data || [];
-        const { children } = d;
-        const temp = children;
-        d.children = tempChildren || undefined;
-        d.data.tempChildren = temp || null;
-        update();
+        if (d.data.children) {
+          const { tempChildren } = d.data || [];
+          const { children } = d;
+          const temp = children;
+          d.children = tempChildren || undefined;
+          d.data.tempChildren = temp || null;
+          update();
+        }
       });
 
     svgNodeGroup
@@ -148,10 +174,14 @@ const radialChartGenerator = (
       .attr('transform', (d) => (d.x >= Math.PI ? 'rotate(180)' : null));
 
     // Event Handling of zoom, mouse over and mouse out
+
+    /* Calling zoom on <g> but attaching the svgOutline 
+      because mouse pointer doesnt automatically point to <g> 
+    */
     svg.call(
       d3
         .zoom<SVGGElement, any>()
-        .scaleExtent([1, 8])
+        .scaleExtent([1, 32])
         .on('zoom', (event) => {
           mainGroupElement.attr(
             'transform',
@@ -196,11 +226,7 @@ const createPathsandNodes = (
     .style('box-sizing', 'border-box')
     .attr('font', '12px sans-serif');
 
-  /* Calling zoom on <g> but attaching the svgOutline 
-  because mouse pointer doesnt automatically point to <g> 
-  */
-
-  radialChartGenerator(baseSVG, tree, data, individualLink);
+  RadialChartGenerator(baseSVG, tree, data, individualLink);
 };
 
 // Main Radial Tree generation function
