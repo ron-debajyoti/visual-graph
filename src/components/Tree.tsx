@@ -6,7 +6,7 @@
  */
 
 import { HierarchyPointNode } from 'd3';
-import { FileType } from './types';
+import { File } from './types';
 
 // const arrayToTreeNode: TreeNode = (input: Array<string>, tree: TreeNode) => {
 //   const name = input.shift();
@@ -17,29 +17,33 @@ import { FileType } from './types';
 class TreeNode {
   public filename: string;
 
-  public fileType: FileType;
+  public file: File;
 
   public children: Array<TreeNode> | null;
 
   public tempChildren: HierarchyPointNode<TreeNode>[] | null;
 
-  constructor(name: string, fileType: string) {
+  constructor(name: string, fileType: string, filePath?: string, fileSha?: string | null) {
     this.filename = name;
-    this.fileType = fileType === 'blob' ? 'leaf' : 'tree';
+    this.file = {
+      path: filePath || null,
+      sha: fileSha || null,
+      type: fileType === 'blob' ? 'leaf' : 'tree',
+    } as File;
     this.children = fileType === 'blob' ? null : [];
     this.tempChildren = null;
     this.find = this.find.bind(this);
   }
 
-  public find = (name: string): TreeNode | null => {
-    if (this.filename === name) {
+  public find = (name: string, path: string | null): TreeNode | null => {
+    if (this.filename === name && (this.file.path === path || this.file.path === null)) {
       return this;
     }
     if (this.children) {
       let result = null;
       if (this.children.length > 0) {
         this.children.forEach((childNode) => {
-          result = childNode.find(name);
+          result = childNode.find(name, path);
         });
         return result;
       }

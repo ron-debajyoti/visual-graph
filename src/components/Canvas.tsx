@@ -218,13 +218,7 @@ const createPathsandNodes = (
     .radius((d) => d.y);
 
   // const baseSVG = d3.select<SVGGElement, any>(svgElement).attr('viewBox', `0 0 ${width} ${height}`);
-  const baseSVG = d3
-    .select<SVGGElement, any>(svgElement)
-    .style('width', '100%')
-    .style('height', '100%')
-    .style('padding', '10px')
-    .style('box-sizing', 'border-box')
-    .attr('font', '12px sans-serif');
+  const baseSVG = d3.select<SVGGElement, any>(svgElement).style('box-sizing', 'border-box');
 
   RadialChartGenerator(baseSVG, tree, data, individualLink);
 };
