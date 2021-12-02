@@ -18,9 +18,9 @@ export interface GitRepository {
 }
 
 export interface File {
-  path: string;
-  sha: string;
-  mode: string;
+  path: string | null;
+  sha: string | null;
+  mode?: string;
   type: FileType;
 }
 

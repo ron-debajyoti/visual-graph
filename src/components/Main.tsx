@@ -26,6 +26,8 @@ const MainDiv = styled.div`
 const CanvasSVG = styled.svg`
   height: 100%;
   width: 100%;
+  padding: 10px;
+  font: 12px sans-serif;
   overflow-y: auto;
 `;
 
@@ -40,25 +42,40 @@ interface Directory {
 const buildTree = (root: TreeNode, childrenFiles: Array<File>): void => {
   if (childrenFiles.length > 0) {
     childrenFiles.forEach((childFile) => {
-      const dirToFileList = childFile.path.split('/');
-      if (dirToFileList.length === 1) {
-        root.children?.push(new TreeNode(dirToFileList[0], childFile.type));
-      } else {
-        dirToFileList.reduce((parentFile, currentFile, currentIndex) => {
-          const file1 = root.find(parentFile);
-          const file2 = root.find(currentFile);
-
-          if (!file1 && !file2) {
-            const node1 = new TreeNode(parentFile, 'tree');
-            const node2 = new TreeNode(currentFile, childFile.type);
-            node1.children?.push(node2);
-            root.children?.push(node1);
-          } else if (file1 && !file2) {
-            const node2 = new TreeNode(currentFile, childFile.type);
-            file1.children?.push(node2);
-          }
-          return currentFile;
-        });
+      if (childFile.path) {
+        const dirToFileList = childFile.path.split('/');
+        if (dirToFileList.length === 1) {
+          const file = new TreeNode(dirToFileList[0], childFile.type);
+          root.children?.push(file);
+        } else {
+          let dirRoot = root;
+          dirToFileList.forEach((file, index) => {
+            if (index === 0) {
+              // getting the first folder and checkin it on root only
+              const file1 = root.find(file, null);
+              if (!file1) {
+                const newNode = new TreeNode(file, 'tree');
+                root.children?.push(newNode);
+                dirRoot = newNode;
+              } else dirRoot = file1;
+            } else {
+              // getting other folders based on the result value of
+              // the index
+              const file2 = dirRoot.find(file, null);
+              if (!file2) {
+                // checking for the last element, rest of the filenames before it are
+                // assumed to be folders
+                const newNode = new TreeNode(
+                  file,
+                  index === dirToFileList.length - 1 ? childFile.type : 'tree'
+                );
+                dirRoot.children?.push(newNode);
+                dirRoot = newNode;
+              } else dirRoot = file2;
+            }
+          });
+        }
+        return 'done';
       }
       return 'done';
     });
