@@ -141,23 +141,30 @@ const RadialChartGenerator = (
      translate(${d.y},0)`
     );
 
-    newNodes
-      .append('circle')
-      .attr('r', 5)
-      .on('click', (event, d) => {
-        if (d.data.children) {
-          const { tempChildren } = d.data || [];
-          const { children } = d;
-          const temp = children;
-          d.children = tempChildren || undefined;
-          d.data.tempChildren = temp || null;
-          update();
-        }
-      });
+    // newNodes.append('circle').attr('r', 5);
+    newNodes.attr('class', (d) => {
+      if (d.data.children || d.data.tempChildren) return 'folder';
+      return 'file';
+    });
 
-    svgNodeGroup
-      .selectAll<SVGGElement, any>('g circle')
-      .attr('fill', (d) => (d.data.children ? '#03adfc' : '#555'));
+    const folderNodes = d3.selectAll<SVGGElement, any>('.folder');
+    const fileNodes = d3.selectAll<SVGGElement, any>('.file');
+    folderNodes.append('rect').attr('width', 10).attr('height', 10);
+    fileNodes.append('circle').attr('r', 5);
+
+    newNodes.on('click', (event, d) => {
+      if (d.data.children) {
+        const { tempChildren } = d.data || [];
+        const { children } = d;
+        const temp = children;
+        d.children = tempChildren || undefined;
+        d.data.tempChildren = temp || null;
+        update();
+      }
+    });
+
+    svgNodeGroup.selectAll<SVGGElement, any>('g circle').attr('fill', '#03adfc');
+    svgNodeGroup.selectAll<SVGGElement, any>('g rect').attr('fill', '#555');
 
     newNodes
       .append('text')
@@ -192,11 +199,23 @@ const RadialChartGenerator = (
     );
 
     newNodes.on('mouseover', (event) => {
-      d3.select(event.target).attr('r', 10);
+      const { target } = event;
+      if (target.nodeName === 'rect') {
+        d3.select(target).attr('width', 15);
+        d3.select(target).attr('height', 15);
+      } else {
+        d3.select(target).attr('r', 10);
+      }
     });
 
     newNodes.on('mouseout', (event) => {
-      d3.select(event.target).attr('r', 5);
+      const { target } = event;
+      if (target.nodeName === 'rect') {
+        d3.select(target).attr('width', 10);
+        d3.select(target).attr('height', 10);
+      } else {
+        d3.select(target).attr('r', 5);
+      }
     });
   };
 
