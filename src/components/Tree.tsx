@@ -6,7 +6,7 @@
  */
 
 import { HierarchyPointNode } from 'd3';
-import { File } from './types';
+import { File, FileProperty, FileType } from './types';
 
 // const arrayToTreeNode: TreeNode = (input: Array<string>, tree: TreeNode) => {
 //   const name = input.shift();
@@ -28,12 +28,38 @@ class TreeNode {
     this.file = {
       path: filePath || null,
       sha: fileSha || null,
-      type: fileType === 'blob' ? 'leaf' : 'tree',
+      type: (fileType === 'blob' ? 'leaf' : 'tree') as FileType,
+      property: this.propertySetter(name, fileType) as FileProperty,
     } as File;
     this.children = fileType === 'blob' ? null : [];
     this.tempChildren = null;
     this.find = this.find.bind(this);
   }
+
+  private propertySetter = (name: string, fileType: string): FileProperty => {
+    if (
+      name.endsWith('.txt') ||
+      name.endsWith('.eslintignore') ||
+      name.endsWith('.husky') ||
+      name.endsWith('.prettierrc') ||
+      name.endsWith('.md') ||
+      name.endsWith('.toml') ||
+      name.endsWith('.json') ||
+      name.endsWith('.yml') ||
+      name.endsWith('.sh') ||
+      name.endsWith('.lock')
+    )
+      return 'config' as FileProperty;
+
+    if (name.match('test')) {
+      if (fileType !== 'blob') return 'test' as FileProperty;
+
+      if (name.endsWith('.ts') || name.endsWith('.tsx') || name.endsWith('.js'))
+        return 'test' as FileProperty;
+      return 'build' as FileProperty;
+    }
+    return 'build' as FileProperty;
+  };
 
   public find = (name: string, path: string | null): TreeNode | null => {
     if (this.filename === name && (this.file.path === path || this.file.path === null)) {

@@ -43,9 +43,12 @@ interface Directory {
 const buildTree = (root: TreeNode, childrenFiles: Array<File>): void => {
   if (childrenFiles.length > 0) {
     childrenFiles.forEach((childFile) => {
+      //
+      // for each childFile in the array of childrenFiles
       if (childFile.path) {
         const dirToFileList = childFile.path.split('/');
         if (dirToFileList.length === 1) {
+          // file present in the root directory
           const file = new TreeNode(dirToFileList[0], childFile.type);
           root.children?.push(file);
         } else {
