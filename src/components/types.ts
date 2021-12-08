@@ -22,7 +22,9 @@ export interface File {
   sha: string | null;
   mode?: string;
   type: FileType;
+  property: FileProperty;
 }
 
 // types used in the project
 export type FileType = 'leaf' | 'tree';
+export type FileProperty = 'test' | 'config' | 'build' | 'style' | 'image';

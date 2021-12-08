@@ -1,4 +1,5 @@
 /* eslint-disable react-hooks/exhaustive-deps */
+
 /**
  * props: project directory details
  * Implementation:
@@ -17,10 +18,28 @@ import RadialTree from './Canvas';
 
 const MainDiv = styled.div`
   display: flex;
-  flex-flow: column;
+  flex-direction: row;
   height: 100%;
   width: 100%;
   overflow: auto;
+`;
+
+const InputDiv = styled.div`
+  display: flex;
+  flex-direction: column;
+`;
+
+const Label = styled.label`
+  margin: 2vh;
+`;
+
+const Button = styled.button`
+  align-self: flex-start;
+  font-size: 1em;
+  font-weight: 200;
+  min-width: 50px;
+  width: auto;
+  margin: 2vh;
 `;
 
 const CanvasSVG = styled.svg`
@@ -42,9 +61,12 @@ interface Directory {
 const buildTree = (root: TreeNode, childrenFiles: Array<File>): void => {
   if (childrenFiles.length > 0) {
     childrenFiles.forEach((childFile) => {
+      //
+      // for each childFile in the array of childrenFiles
       if (childFile.path) {
         const dirToFileList = childFile.path.split('/');
         if (dirToFileList.length === 1) {
+          // file present in the root directory
           const file = new TreeNode(dirToFileList[0], childFile.type);
           root.children?.push(file);
         } else {
@@ -181,19 +203,21 @@ const Process = (props: object) => {
 
   return (
     <MainDiv>
-      <label htmlFor="enter-repo">
-        Enter repository:
-        <input
-          placeholder="ron-debajyoti/easy-visualify"
-          type="text"
-          name="enter-repo"
-          onChange={(event) => handleOnChange(event)}
-        />
-      </label>
-      <button type="button" onClick={(event) => handleOnSubmit(event)}>
-        {' '}
-        Submit{' '}
-      </button>
+      <InputDiv>
+        <Label htmlFor="enter-repo">
+          Enter repository:
+          <input
+            placeholder="ron-debajyoti/easy-visualify"
+            type="text"
+            name="enter-repo"
+            onChange={(event) => handleOnChange(event)}
+          />
+        </Label>
+        <Button type="button" onClick={(event) => handleOnSubmit(event)}>
+          {' '}
+          Submit{' '}
+        </Button>
+      </InputDiv>
       <CanvasSVG id="chart-svg" ref={svgRef} />
     </MainDiv>
   );
