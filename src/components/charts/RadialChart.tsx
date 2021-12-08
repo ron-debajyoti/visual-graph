@@ -8,6 +8,14 @@ import * as d3 from 'd3';
 import { HierarchyPointLink, HierarchyPointNode } from 'd3';
 import TreeNode from '../Tree';
 
+const FileColors = {
+  test: '#e81809',
+  config: '#555',
+  build: '#03adfc',
+  style: '#ecff19',
+  image: '#ff19b6',
+};
+
 const collapsibleNode = (d: d3.HierarchyPointNode<TreeNode>) => {
   if (d.children) {
     const { tempChildren } = d.data || [];
@@ -37,7 +45,7 @@ const collapseTreeCheck = (root: d3.HierarchyPointNode<TreeNode>) => {
   * Generates the whole radial chart
   */
 const RadialChartGenerator = (
-  svg: d3.Selection<SVGGElement, any, null, undefined>,
+  svg: d3.Selection<SVGGElement, d3.HierarchyPointNode<TreeNode>, null, undefined>,
   tree: d3.TreeLayout<TreeNode>,
   data: d3.HierarchyNode<TreeNode>,
   graphLinkFunction: d3.LinkRadial<
@@ -86,7 +94,7 @@ const RadialChartGenerator = (
         d3
           .linkRadial<HierarchyPointLink<TreeNode>, HierarchyPointNode<TreeNode>>()
           .angle((d) => d.x)
-          .radius((d) => 0.1)
+          .radius((d) => d.y * 3)
       );
 
     const allLinks = svgLinkGroup.selectAll<SVGGElement, any>('path');
@@ -109,12 +117,14 @@ const RadialChartGenerator = (
      * Nodes
      */
     const nodesData = root.descendants().reverse();
-    const nodes = svgNodeGroup.selectAll<SVGGElement, any>('g').data(nodesData, (d) => {
-      if (d.parent) {
-        return d.parent.data.filename + d.data.filename;
-      }
-      return d.data.filename;
-    });
+    const nodes = svgNodeGroup
+      .selectAll<SVGGElement, any>('g')
+      .data(nodesData, (d: d3.HierarchyPointNode<TreeNode>) => {
+        if (d.parent) {
+          return d.parent.data.filename + d.data.filename;
+        }
+        return d.data.filename;
+      });
 
     nodes.exit().remove();
     const newNodes = nodes.enter().append('g');
@@ -136,9 +146,9 @@ const RadialChartGenerator = (
       : svgNodeGroup.selectAll<SVGGElement, any>('g');
     allNodes.attr(
       'transform',
-      (d) => `
+      (d: d3.HierarchyPointNode<TreeNode>) => `
      rotate(${(d.x * 180) / Math.PI - 90})
-     translate(${d.y},0)`
+     translate(${d.y * 3},0)`
     );
 
     // newNodes.append('circle').attr('r', 5);
@@ -147,12 +157,12 @@ const RadialChartGenerator = (
       return 'file';
     });
 
-    const folderNodes = d3.selectAll<SVGGElement, any>('.folder');
-    const fileNodes = d3.selectAll<SVGGElement, any>('.file');
-    folderNodes.append('rect').attr('width', 10).attr('height', 10);
-    fileNodes.append('circle').attr('r', 5);
+    const fileNodes = d3.selectAll<SVGGElement, d3.HierarchyPointNode<TreeNode>>('.file');
+    fileNodes.exit().remove();
+    fileNodes.enter().append('circle');
+    fileNodes.append('circle').attr('r', 10);
 
-    newNodes.on('click', (event, d) => {
+    newNodes.on('click', (event: Event, d) => {
       if (d.data.children) {
         const { tempChildren } = d.data || [];
         const { children } = d;
@@ -163,12 +173,20 @@ const RadialChartGenerator = (
       }
     });
 
-    svgNodeGroup.selectAll<SVGGElement, any>('g circle').attr('fill', '#03adfc');
-    svgNodeGroup.selectAll<SVGGElement, any>('g rect').attr('fill', '#555');
+    svgNodeGroup
+      .selectAll<SVGGElement, any>('g circle')
+      .attr('fill', (d: d3.HierarchyPointNode<TreeNode>) => {
+        const { property } = d.data.file;
+        if (property === 'test') return FileColors.test;
+        if (property === 'image') return FileColors.image;
+        if (property === 'style') return FileColors.style;
+        if (property === 'config') return FileColors.config;
+        return FileColors.build;
+      });
 
     newNodes
       .append('text')
-      .attr('font-size', '11')
+      .attr('font-size', '20')
       .attr('dy', '0.31em')
       .text((d) => d.data.filename)
       .clone(true)
@@ -176,9 +194,13 @@ const RadialChartGenerator = (
 
     svgNodeGroup
       .selectAll<SVGGElement, any>('g text')
-      .attr('x', (d) => (d.x < Math.PI === !d.children ? 9 : -9))
-      .attr('text-anchor', (d) => (d.x < Math.PI === !d.children ? 'start' : 'end'))
-      .attr('transform', (d) => (d.x >= Math.PI ? 'rotate(180)' : null));
+      .attr('x', (d: d3.HierarchyPointNode<TreeNode>) => (d.x < Math.PI === !d.children ? 9 : -9))
+      .attr('text-anchor', (d: d3.HierarchyPointNode<TreeNode>) =>
+        d.x < Math.PI === !d.children ? 'start' : 'end'
+      )
+      .attr('transform', (d: d3.HierarchyPointNode<TreeNode>) =>
+        d.x >= Math.PI ? 'rotate(180)' : null
+      );
 
     // Event Handling of zoom, mouse over and mouse out
 
@@ -198,24 +220,14 @@ const RadialChartGenerator = (
         })
     );
 
-    newNodes.on('mouseover', (event) => {
+    newNodes.on('mouseover', (event, d) => {
       const { target } = event;
-      if (target.nodeName === 'rect') {
-        d3.select(target).attr('width', 15);
-        d3.select(target).attr('height', 15);
-      } else {
-        d3.select(target).attr('r', 10);
-      }
+      d3.select(target).attr('r', 15);
     });
 
     newNodes.on('mouseout', (event) => {
       const { target } = event;
-      if (target.nodeName === 'rect') {
-        d3.select(target).attr('width', 10);
-        d3.select(target).attr('height', 10);
-      } else {
-        d3.select(target).attr('r', 5);
-      }
+      d3.select(target).attr('r', 10);
     });
   };
 
@@ -232,10 +244,12 @@ const RadialChart = (
   const individualLink = d3
     .linkRadial<HierarchyPointLink<TreeNode>, HierarchyPointNode<TreeNode>>()
     .angle((d) => d.x)
-    .radius((d) => d.y);
+    .radius((d) => d.y * 3);
 
   // const baseSVG = d3.select<SVGGElement, any>(svgElement).attr('viewBox', `0 0 ${width} ${height}`);
-  const baseSVG = d3.select<SVGGElement, any>(svgElement).style('box-sizing', 'border-box');
+  const baseSVG = d3
+    .select<SVGGElement, d3.HierarchyPointNode<TreeNode>>(svgElement)
+    .style('box-sizing', 'border-box');
 
   RadialChartGenerator(baseSVG, tree, data, individualLink);
 };

@@ -18,10 +18,28 @@ import RadialTree from './Canvas';
 
 const MainDiv = styled.div`
   display: flex;
-  flex-flow: column;
+  flex-direction: row;
   height: 100%;
   width: 100%;
   overflow: auto;
+`;
+
+const InputDiv = styled.div`
+  display: flex;
+  flex-direction: column;
+`;
+
+const Label = styled.label`
+  margin: 2vh;
+`;
+
+const Button = styled.button`
+  align-self: flex-start;
+  font-size: 1em;
+  font-weight: 200;
+  min-width: 50px;
+  width: auto;
+  margin: 2vh;
 `;
 
 const CanvasSVG = styled.svg`
@@ -185,19 +203,21 @@ const Process = (props: object) => {
 
   return (
     <MainDiv>
-      <label htmlFor="enter-repo">
-        Enter repository:
-        <input
-          placeholder="ron-debajyoti/easy-visualify"
-          type="text"
-          name="enter-repo"
-          onChange={(event) => handleOnChange(event)}
-        />
-      </label>
-      <button type="button" onClick={(event) => handleOnSubmit(event)}>
-        {' '}
-        Submit{' '}
-      </button>
+      <InputDiv>
+        <Label htmlFor="enter-repo">
+          Enter repository:
+          <input
+            placeholder="ron-debajyoti/easy-visualify"
+            type="text"
+            name="enter-repo"
+            onChange={(event) => handleOnChange(event)}
+          />
+        </Label>
+        <Button type="button" onClick={(event) => handleOnSubmit(event)}>
+          {' '}
+          Submit{' '}
+        </Button>
+      </InputDiv>
       <CanvasSVG id="chart-svg" ref={svgRef} />
     </MainDiv>
   );

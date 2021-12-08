@@ -40,8 +40,10 @@ class TreeNode {
     if (
       name.endsWith('.txt') ||
       name.endsWith('.eslintignore') ||
+      name.endsWith('Procfile') ||
       name.endsWith('.husky') ||
       name.endsWith('.prettierrc') ||
+      name.endsWith('.babelrc') ||
       name.endsWith('.md') ||
       name.endsWith('.toml') ||
       name.endsWith('.json') ||
@@ -51,10 +53,28 @@ class TreeNode {
     )
       return 'config' as FileProperty;
 
+    if (
+      name.endsWith('.png') ||
+      name.endsWith('.gif') ||
+      name.endsWith('.jpg') ||
+      name.endsWith('.jpeg') ||
+      name.endsWith('.ico') ||
+      name.endsWith('.svg')
+    )
+      return 'image' as FileProperty;
+
+    if (name.endsWith('.css') || name.endsWith('.scss')) return 'style' as FileProperty;
+
     if (name.match('test')) {
       if (fileType !== 'blob') return 'test' as FileProperty;
 
-      if (name.endsWith('.ts') || name.endsWith('.tsx') || name.endsWith('.js'))
+      if (
+        name.endsWith('.ts') ||
+        name.endsWith('.tsx') ||
+        name.endsWith('.js') ||
+        name.endsWith('.jsx') ||
+        name.endsWith('.snap')
+      )
         return 'test' as FileProperty;
       return 'build' as FileProperty;
     }
