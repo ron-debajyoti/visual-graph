@@ -6,6 +6,7 @@
 
 import * as d3 from 'd3';
 import { HierarchyPointLink, HierarchyPointNode } from 'd3';
+import { Coordinate, CircleCoordinates } from '../types';
 import TreeNode from '../Tree';
 
 const FileColors = {
@@ -33,6 +34,45 @@ const collapseTreeCheck = (root: d3.HierarchyPointNode<TreeNode>) => {
   if (root.children && root.children?.length > 20) {
     root.children?.forEach((d) => collapsibleNode(d));
   }
+};
+
+const setCircleParam = (root: d3.HierarchyPointNode<TreeNode>): CircleCoordinates | Coordinate => {
+  // if root is a file, get the (maxX,maxY),(maxX,minY),(minX,maxY),(minX,minY)
+  // from it's children
+
+  const { children, x, y } = root;
+  const { type } = root.data.file;
+  if (type === 'leaf') {
+    return { x, y } as Coordinate;
+  }
+
+  let maxX = x;
+  let minX = x;
+  let maxY = y;
+  let minY = y;
+
+  children?.forEach((child) => {
+    const { x: childX, y: childY } = setCircleParam(child) as Coordinate;
+    if (!isNaN(childX) && !isNaN(childY)) {
+      maxX = Math.max(maxX, childX);
+      minX = Math.min(minX, childX);
+      maxY = Math.max(maxY, childY);
+      minY = Math.min(minY, childY);
+    }
+  });
+
+  const circleCoordinates = {
+    left: { x: minX, y: minY } as Coordinate,
+    right: { x: maxX, y: minY } as Coordinate,
+    top: { x: maxX, y: maxY } as Coordinate,
+    bottom: { x: minX, y: maxY } as Coordinate,
+  };
+  console.log(`File ${root.data.filename} : coord =>`);
+  console.log(circleCoordinates);
+
+  root.data.file.circleCoordinates = circleCoordinates;
+
+  return circleCoordinates;
 };
 
 /**
@@ -69,7 +109,8 @@ const RadialChartGenerator = (
 
   let root = tree(data);
   collapseTreeCheck(root);
-
+  setCircleParam(root);
+  console.log(root);
   /**
    * @param animate boolean
    *

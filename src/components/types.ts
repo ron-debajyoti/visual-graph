@@ -17,12 +17,24 @@ export interface GitRepository {
   defaultBranch: string;
 }
 
+export interface CircleCoordinates {
+  left: Coordinate;
+  right: Coordinate;
+  top: Coordinate;
+  bottom: Coordinate;
+}
 export interface File {
   path: string | null;
   sha: string | null;
   mode?: string;
   type: FileType;
   property: FileProperty;
+  circleCoordinates: CircleCoordinates;
+}
+
+export interface Coordinate {
+  x: number;
+  y: number;
 }
 
 // types used in the project
