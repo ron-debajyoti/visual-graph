@@ -6,7 +6,7 @@
 
 import * as d3 from 'd3';
 import { HierarchyPointLink, HierarchyPointNode } from 'd3';
-import { Coordinate, CircleCoordinates } from '../types';
+import { Coordinate } from '../types';
 import TreeNode from '../Tree';
 
 const FileColors = {
@@ -15,6 +15,7 @@ const FileColors = {
   build: '#03adfc',
   style: '#ecff19',
   image: '#ff19b6',
+  overlay: '#fad161',
 };
 
 const collapsibleNode = (d: d3.HierarchyPointNode<TreeNode>) => {
@@ -36,9 +37,31 @@ const collapseTreeCheck = (root: d3.HierarchyPointNode<TreeNode>) => {
   }
 };
 
-const setCircleParam = (root: d3.HierarchyPointNode<TreeNode>): CircleCoordinates | Coordinate => {
-  // if root is a file, get the (maxX,maxY),(maxX,minY),(minX,maxY),(minX,minY)
-  // from it's children
+/**
+ *
+ * @param two Edge points of the arc
+ * @returns Outermost extended point opposite to center of arc
+ */
+
+const calculateEndPoint = (top: Coordinate, bottom: Coordinate, center: Coordinate) => {
+  const distanceCalculation = (c1: Coordinate, c2: Coordinate) =>
+    Math.sqrt(Math.pow(c1.x - c2.x, 2) + Math.pow(c1.y - c2.y, 2));
+
+  const midpoint: Coordinate = { x: (top.x + bottom.x) / 2, y: (top.y + bottom.y) / 2 };
+  const radius = Math.max(distanceCalculation(top, center), distanceCalculation(bottom, center));
+  return {
+    x: midpoint.x + radius,
+    y: midpoint.y + radius,
+  };
+};
+
+/* function for setting up the coordinates for the folder overlay
+ */
+const setCircleParam = (root: d3.HierarchyPointNode<TreeNode>): Array<Coordinate> | Coordinate => {
+  // if root is a folder:
+  //      get the topChild and bottomChild from its children
+  // else root is a file (leaf node):
+  //      return its coordinates
 
   const { children, x, y } = root;
   const { type } = root.data.file;
@@ -46,32 +69,42 @@ const setCircleParam = (root: d3.HierarchyPointNode<TreeNode>): CircleCoordinate
     return { x, y } as Coordinate;
   }
 
-  let maxX = x;
-  let minX = x;
-  let maxY = y;
-  let minY = y;
+  let topRadialElement: Coordinate = { x: Number.MAX_VALUE, y: Number.MAX_VALUE };
+  let bottomRadialElement: Coordinate = {
+    x: Number.MIN_VALUE,
+    y: Number.MIN_VALUE,
+  };
 
   children?.forEach((child) => {
-    const { x: childX, y: childY } = setCircleParam(child) as Coordinate;
-    if (!isNaN(childX) && !isNaN(childY)) {
-      maxX = Math.max(maxX, childX);
-      minX = Math.min(minX, childX);
-      maxY = Math.max(maxY, childY);
-      minY = Math.min(minY, childY);
+    const childCoordinates = setCircleParam(child);
+    if (childCoordinates.constructor === Array) {
+      // we got another array of coordinates
+      childCoordinates.forEach((coord, index) => {
+        if (index === 0) {
+          topRadialElement = coord;
+          bottomRadialElement = coord;
+        } else if (topRadialElement.y > coord.y) {
+          topRadialElement = coord;
+        } else if (bottomRadialElement.y < coord.y) {
+          bottomRadialElement = coord;
+        }
+      });
+    } else {
+      const cc = childCoordinates as Coordinate;
+      topRadialElement.y = Math.min(topRadialElement.y, cc.y);
+      topRadialElement.x = Math.min(topRadialElement.x, cc.x);
+      bottomRadialElement.y = Math.max(bottomRadialElement.y, cc.y);
+      bottomRadialElement.x = Math.max(bottomRadialElement.x, cc.x);
     }
   });
 
-  const circleCoordinates = {
-    left: { x: minX, y: minY } as Coordinate,
-    right: { x: maxX, y: minY } as Coordinate,
-    top: { x: maxX, y: maxY } as Coordinate,
-    bottom: { x: minX, y: maxY } as Coordinate,
-  };
-  console.log(`File ${root.data.filename} : coord =>`);
-  console.log(circleCoordinates);
+  // adding midpoints and the parent pointer as well
+  // creating a circular/elliptic path
 
+  const endPoint: Coordinate = calculateEndPoint(topRadialElement, bottomRadialElement, { x, y });
+
+  const circleCoordinates = [{ x, y }, topRadialElement, bottomRadialElement, endPoint];
   root.data.file.circleCoordinates = circleCoordinates;
-
   return circleCoordinates;
 };
 
@@ -169,6 +202,7 @@ const RadialChartGenerator = (
 
     nodes.exit().remove();
     const newNodes = nodes.enter().append('g');
+
     const allNodes = animate
       ? svgNodeGroup
           .selectAll<SVGGElement, any>('g')
@@ -200,8 +234,15 @@ const RadialChartGenerator = (
 
     const fileNodes = d3.selectAll<SVGGElement, d3.HierarchyPointNode<TreeNode>>('.file');
     fileNodes.exit().remove();
-    fileNodes.enter().append('circle');
+    fileNodes.enter();
     fileNodes.append('circle').attr('r', 10);
+
+    // curve line helper function:
+    const curveHelperFunction = d3
+      .line<Coordinate>()
+      .curve(d3.curveBasis)
+      .x((d) => d.x)
+      .y((d) => d.y);
 
     newNodes.on('click', (event: Event, d) => {
       if (d.data.children) {
@@ -213,6 +254,32 @@ const RadialChartGenerator = (
         update();
       }
     });
+
+    // Generating curve/circle overlay for each folder:
+    const circleOverlay = svgNodeGroup.selectAll<SVGGElement, d3.HierarchyPointNode<TreeNode>>(
+      '.folder'
+    );
+    circleOverlay.exit().remove();
+    circleOverlay.enter();
+    circleOverlay
+      .append('path')
+      .attr('d', (d) => {
+        const { type, circleCoordinates } = d.data.file;
+        if (type === 'tree' && d.children !== undefined) {
+          return curveHelperFunction(circleCoordinates);
+        }
+        return curveHelperFunction([{ x: 0, y: 0 }]);
+      })
+      .attr('stroke', 'black')
+      .attr('fill', FileColors.overlay)
+      .attr('stroke-opacity', '0.3')
+      .attr('fill-opacity', '0.8')
+      .attr(
+        'transform',
+        (d: d3.HierarchyPointNode<TreeNode>) => `
+      rotate(${(d.x * 180) / Math.PI - 90})
+      translate(${d.y * 3},0)`
+      );
 
     svgNodeGroup
       .selectAll<SVGGElement, any>('g circle')
@@ -270,6 +337,10 @@ const RadialChartGenerator = (
       const { target } = event;
       d3.select(target).attr('r', 10);
     });
+
+    // mainGroupElement.on('click', (event: MouseEvent) => {
+    //   console.log(event.clientX, event.clientY);
+    // });
   };
 
   update(false);
