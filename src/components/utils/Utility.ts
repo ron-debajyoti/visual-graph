@@ -1,7 +1,7 @@
 import { Octokit } from '@octokit/core';
 import { GitRepository, Branch, Commit } from '../types';
 
-require('dotenv').config();
+// require('dotenv').config();
 
 const octokit = new Octokit({ auth: process.env.REACT_APP_GITHUB_ACCESS_TOKEN });
 
