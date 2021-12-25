@@ -23,7 +23,7 @@ export interface File {
   mode?: string;
   type: FileType;
   property: FileProperty;
-  circleCoordinates: Array<Coordinate>;
+  circleCoordinates: Array<Coordinate> | undefined;
 }
 
 export interface Coordinate {

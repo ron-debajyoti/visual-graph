@@ -8,6 +8,7 @@ import * as d3 from 'd3';
 import { HierarchyPointLink, HierarchyPointNode } from 'd3';
 import { Coordinate } from '../types';
 import TreeNode from '../Tree';
+import { calculateEndPoint } from './utils/ChartRenderingHelpers';
 
 const FileColors = {
   test: '#e81809',
@@ -37,75 +38,30 @@ const collapseTreeCheck = (root: d3.HierarchyPointNode<TreeNode>) => {
   }
 };
 
-/**
- *
- * @param two Edge points of the arc
- * @returns Outermost extended point opposite to center of arc
- */
-
-const calculateEndPoint = (top: Coordinate, bottom: Coordinate, center: Coordinate) => {
-  const distanceCalculation = (c1: Coordinate, c2: Coordinate) =>
-    Math.sqrt(Math.pow(c1.x - c2.x, 2) + Math.pow(c1.y - c2.y, 2));
-
-  const midpoint: Coordinate = { x: (top.x + bottom.x) / 2, y: (top.y + bottom.y) / 2 };
-  const radius = Math.max(distanceCalculation(top, center), distanceCalculation(bottom, center));
-  return {
-    x: midpoint.x + radius,
-    y: midpoint.y + radius,
-  };
-};
-
 /* function for setting up the coordinates for the folder overlay
  */
 const setCircleParam = (root: d3.HierarchyPointNode<TreeNode>): Array<Coordinate> | Coordinate => {
   // if root is a folder:
-  //      get the topChild and bottomChild from its children
+  //      get all its children coordinates
   // else root is a file (leaf node):
   //      return its coordinates
 
   const { children, x, y } = root;
   const { type } = root.data.file;
-  if (type === 'leaf') {
+  if (type === 'leaf' || !children) {
     return { x, y } as Coordinate;
   }
 
-  let topRadialElement: Coordinate = { x: Number.MAX_VALUE, y: Number.MAX_VALUE };
-  let bottomRadialElement: Coordinate = {
-    x: Number.MIN_VALUE,
-    y: Number.MIN_VALUE,
-  };
-
-  children?.forEach((child) => {
-    const childCoordinates = setCircleParam(child);
-    if (childCoordinates.constructor === Array) {
-      // we got another array of coordinates
-      childCoordinates.forEach((coord, index) => {
-        if (index === 0) {
-          topRadialElement = coord;
-          bottomRadialElement = coord;
-        } else if (topRadialElement.y > coord.y) {
-          topRadialElement = coord;
-        } else if (bottomRadialElement.y < coord.y) {
-          bottomRadialElement = coord;
-        }
-      });
-    } else {
-      const cc = childCoordinates as Coordinate;
-      topRadialElement.y = Math.min(topRadialElement.y, cc.y);
-      topRadialElement.x = Math.min(topRadialElement.x, cc.x);
-      bottomRadialElement.y = Math.max(bottomRadialElement.y, cc.y);
-      bottomRadialElement.x = Math.max(bottomRadialElement.x, cc.x);
-    }
+  const coordinates = children?.map((child) => {
+    setCircleParam(child);
+    return { x: child.x, y: child.y } as Coordinate;
   });
 
-  // adding midpoints and the parent pointer as well
-  // creating a circular/elliptic path
+  coordinates.splice(0, 0, { x, y });
+  // coordinates.push({ x, y });
 
-  const endPoint: Coordinate = calculateEndPoint(topRadialElement, bottomRadialElement, { x, y });
-
-  const circleCoordinates = [{ x, y }, topRadialElement, bottomRadialElement, endPoint];
-  root.data.file.circleCoordinates = circleCoordinates;
-  return circleCoordinates;
+  root.data.file.circleCoordinates = coordinates;
+  return coordinates;
 };
 
 /**
@@ -237,13 +193,6 @@ const RadialChartGenerator = (
     fileNodes.enter();
     fileNodes.append('circle').attr('r', 10);
 
-    // curve line helper function:
-    const curveHelperFunction = d3
-      .line<Coordinate>()
-      .curve(d3.curveBasis)
-      .x((d) => d.x)
-      .y((d) => d.y);
-
     newNodes.on('click', (event: Event, d) => {
       if (d.data.children) {
         const { tempChildren } = d.data || [];
@@ -255,6 +204,12 @@ const RadialChartGenerator = (
       }
     });
 
+    // curve line helper function:
+    const curveHelperFunction = d3
+      .lineRadial<Coordinate>()
+      .angle((d) => d.x)
+      .radius((d) => d.y * 3);
+
     // Generating curve/circle overlay for each folder:
     const circleOverlay = svgNodeGroup.selectAll<SVGGElement, d3.HierarchyPointNode<TreeNode>>(
       '.folder'
@@ -265,7 +220,9 @@ const RadialChartGenerator = (
       .append('path')
       .attr('d', (d) => {
         const { type, circleCoordinates } = d.data.file;
-        if (type === 'tree' && d.children !== undefined) {
+        // console.log(`Current coordinates : ${d.x}, ${d.y}`);
+        // console.log(circleCoordinates);
+        if (type === 'tree' && d.children !== undefined && circleCoordinates) {
           return curveHelperFunction(circleCoordinates);
         }
         return curveHelperFunction([{ x: 0, y: 0 }]);
@@ -277,10 +234,12 @@ const RadialChartGenerator = (
       .attr(
         'transform',
         (d: d3.HierarchyPointNode<TreeNode>) => `
-      rotate(${(d.x * 180) / Math.PI - 90})
-      translate(${d.y * 3},0)`
+        rotate(${(d.x * 180) / Math.PI - 45}) translate(${d.y * 3},0)`
       );
 
+    /**
+     * Add color to the files
+     */
     svgNodeGroup
       .selectAll<SVGGElement, any>('g circle')
       .attr('fill', (d: d3.HierarchyPointNode<TreeNode>) => {
@@ -329,6 +288,8 @@ const RadialChartGenerator = (
     );
 
     newNodes.on('mouseover', (event, d) => {
+      console.log(d.x, d.y);
+      console.log(d.data.file.circleCoordinates);
       const { target } = event;
       d3.select(target).attr('r', 15);
     });
