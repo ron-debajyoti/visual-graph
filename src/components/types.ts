@@ -23,6 +23,12 @@ export interface File {
   mode?: string;
   type: FileType;
   property: FileProperty;
+  circleCoordinates: Array<Coordinate> | undefined;
+}
+
+export interface Coordinate {
+  x: number;
+  y: number;
 }
 
 // types used in the project

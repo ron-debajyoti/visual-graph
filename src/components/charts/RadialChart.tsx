@@ -6,7 +6,9 @@
 
 import * as d3 from 'd3';
 import { HierarchyPointLink, HierarchyPointNode } from 'd3';
+import { Coordinate } from '../types';
 import TreeNode from '../Tree';
+import { calculateEndPoint } from './utils/ChartRenderingHelpers';
 
 const FileColors = {
   test: '#e81809',
@@ -14,6 +16,7 @@ const FileColors = {
   build: '#03adfc',
   style: '#ecff19',
   image: '#ff19b6',
+  overlay: '#fad161',
 };
 
 const collapsibleNode = (d: d3.HierarchyPointNode<TreeNode>) => {
@@ -33,6 +36,32 @@ const collapseTreeCheck = (root: d3.HierarchyPointNode<TreeNode>) => {
   if (root.children && root.children?.length > 20) {
     root.children?.forEach((d) => collapsibleNode(d));
   }
+};
+
+/* function for setting up the coordinates for the folder overlay
+ */
+const setCircleParam = (root: d3.HierarchyPointNode<TreeNode>): Array<Coordinate> | Coordinate => {
+  // if root is a folder:
+  //      get all its children coordinates
+  // else root is a file (leaf node):
+  //      return its coordinates
+
+  const { children, x, y } = root;
+  const { type } = root.data.file;
+  if (type === 'leaf' || !children) {
+    return { x, y } as Coordinate;
+  }
+
+  const coordinates = children?.map((child) => {
+    setCircleParam(child);
+    return { x: child.x, y: child.y } as Coordinate;
+  });
+
+  coordinates.splice(0, 0, { x, y });
+  // coordinates.push({ x, y });
+
+  root.data.file.circleCoordinates = coordinates;
+  return coordinates;
 };
 
 /**
@@ -69,7 +98,8 @@ const RadialChartGenerator = (
 
   let root = tree(data);
   collapseTreeCheck(root);
-
+  setCircleParam(root);
+  console.log(root);
   /**
    * @param animate boolean
    *
@@ -128,6 +158,7 @@ const RadialChartGenerator = (
 
     nodes.exit().remove();
     const newNodes = nodes.enter().append('g');
+
     const allNodes = animate
       ? svgNodeGroup
           .selectAll<SVGGElement, any>('g')
@@ -159,7 +190,7 @@ const RadialChartGenerator = (
 
     const fileNodes = d3.selectAll<SVGGElement, d3.HierarchyPointNode<TreeNode>>('.file');
     fileNodes.exit().remove();
-    fileNodes.enter().append('circle');
+    fileNodes.enter();
     fileNodes.append('circle').attr('r', 10);
 
     newNodes.on('click', (event: Event, d) => {
@@ -173,6 +204,42 @@ const RadialChartGenerator = (
       }
     });
 
+    // curve line helper function:
+    const curveHelperFunction = d3
+      .lineRadial<Coordinate>()
+      .angle((d) => d.x)
+      .radius((d) => d.y * 3);
+
+    // Generating curve/circle overlay for each folder:
+    const circleOverlay = svgNodeGroup.selectAll<SVGGElement, d3.HierarchyPointNode<TreeNode>>(
+      '.folder'
+    );
+    circleOverlay.exit().remove();
+    circleOverlay.enter();
+    circleOverlay
+      .append('path')
+      .attr('d', (d) => {
+        const { type, circleCoordinates } = d.data.file;
+        // console.log(`Current coordinates : ${d.x}, ${d.y}`);
+        // console.log(circleCoordinates);
+        if (type === 'tree' && d.children !== undefined && circleCoordinates) {
+          return curveHelperFunction(circleCoordinates);
+        }
+        return curveHelperFunction([{ x: 0, y: 0 }]);
+      })
+      .attr('stroke', 'black')
+      .attr('fill', FileColors.overlay)
+      .attr('stroke-opacity', '0.3')
+      .attr('fill-opacity', '0.8')
+      .attr(
+        'transform',
+        (d: d3.HierarchyPointNode<TreeNode>) => `
+        rotate(${(d.x * 180) / Math.PI - 45}) translate(${d.y * 3},0)`
+      );
+
+    /**
+     * Add color to the files
+     */
     svgNodeGroup
       .selectAll<SVGGElement, any>('g circle')
       .attr('fill', (d: d3.HierarchyPointNode<TreeNode>) => {
@@ -221,6 +288,8 @@ const RadialChartGenerator = (
     );
 
     newNodes.on('mouseover', (event, d) => {
+      console.log(d.x, d.y);
+      console.log(d.data.file.circleCoordinates);
       const { target } = event;
       d3.select(target).attr('r', 15);
     });
@@ -229,6 +298,10 @@ const RadialChartGenerator = (
       const { target } = event;
       d3.select(target).attr('r', 10);
     });
+
+    // mainGroupElement.on('click', (event: MouseEvent) => {
+    //   console.log(event.clientX, event.clientY);
+    // });
   };
 
   update(false);
