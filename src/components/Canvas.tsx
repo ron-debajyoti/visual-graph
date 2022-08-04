@@ -17,7 +17,7 @@ const CanvasRenderer = (rootNode: TreeNode, svgElement: SVGSVGElement) => {
   const treeStructure = d3
     .tree<TreeNode>()
     .size([2 * Math.PI, radius])
-    .separation((a, b) => (a.parent === b.parent ? 1.5 : 10) / a.depth);
+    .separation((a, b) => (a.parent === b.parent ? 2 : 15) / a.depth);
 
   RadialChart(treeStructure, data, svgElement);
 };

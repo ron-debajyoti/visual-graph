@@ -24,24 +24,6 @@ const MainDiv = styled.div`
   overflow: auto;
 `;
 
-const InputDiv = styled.div`
-  display: flex;
-  flex-direction: column;
-`;
-
-const Label = styled.label`
-  margin: 2vh;
-`;
-
-const Button = styled.button`
-  align-self: flex-start;
-  font-size: 1em;
-  font-weight: 200;
-  min-width: 50px;
-  width: auto;
-  margin: 2vh;
-`;
-
 const CanvasSVG = styled.svg`
   height: 100%;
   width: 100%;
@@ -54,6 +36,10 @@ interface Directory {
   files: Array<File>;
   fileType: FileType;
 }
+
+type MainPropType = {
+  inputVal: string;
+};
 
 /*
   Given the root node, build the whole file TreeNode with children files
@@ -107,11 +93,11 @@ const buildTree = (root: TreeNode, childrenFiles: Array<File>): void => {
 /**
  * TODO: dealing with different branches
  */
-const Process = (props: object) => {
+const Process = (props: MainPropType) => {
   /*
     Initializing hooks used in Process
   */
-  const [inputVal, setInputVal] = useState<String>('');
+  const { inputVal } = props;
   const [repUpdate, setRepUpdate] = useState<boolean>(false);
   const [gitRepository, setGitRepository] = useState<GitRepository>({
     owner: 'ron-debajyoti',
@@ -129,23 +115,18 @@ const Process = (props: object) => {
   const svgRef = useRef<SVGSVGElement>(null);
 
   /* Handling Method implementation */
-  const handleOnSubmit = (event: React.MouseEvent<HTMLButtonElement, MouseEvent>) => {
-    event.preventDefault();
+  useEffect(() => {
     const splitArray = inputVal.split('/');
-    setGitRepository({
-      owner: splitArray[0],
-      repo: splitArray[1],
-      branches: [],
-      defaultBranch: 'master',
-    });
-    setRepUpdate(!repUpdate);
-  };
-
-  const handleOnChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    event.preventDefault();
-    const inputText = event.target.value;
-    setInputVal(inputText);
-  };
+    if (splitArray.length > 1) {
+      setGitRepository({
+        owner: splitArray[0],
+        repo: splitArray[1],
+        branches: [],
+        defaultBranch: 'master',
+      });
+      setRepUpdate(!repUpdate);
+    }
+  }, [inputVal]);
 
   async function updateGitRepo(): Promise<GitRepository> {
     const defaultBranch = await fetchDefaultBranch(gitRepository.owner, gitRepository.repo);
@@ -203,21 +184,6 @@ const Process = (props: object) => {
 
   return (
     <MainDiv>
-      <InputDiv>
-        <Label htmlFor="enter-repo">
-          Enter repository:
-          <input
-            placeholder="ron-debajyoti/easy-visualify"
-            type="text"
-            name="enter-repo"
-            onChange={(event) => handleOnChange(event)}
-          />
-        </Label>
-        <Button type="button" onClick={(event) => handleOnSubmit(event)}>
-          {' '}
-          Submit{' '}
-        </Button>
-      </InputDiv>
       <CanvasSVG id="chart-svg" ref={svgRef} />
     </MainDiv>
   );
