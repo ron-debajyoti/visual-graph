@@ -1,23 +1,34 @@
-import React from 'react';
+import React, { useState } from 'react';
 import styled from 'styled-components';
 import Process from './Main';
+import InputSection from './InputSection';
 import '../styles/App.css';
 
 const Wrapper = styled.div`
   display: flex;
-  flex-flow: column;
+  flex-flow: row;
   height: 100%;
   width: 100%;
   overflow: auto;
 `;
 
-const Header = styled.h1``;
+const App = () => {
+  const [input, setInput] = useState<string>('');
 
-const App = () => (
-  <Wrapper>
-    <Header> GitTreees </Header>
-    <Process />
-  </Wrapper>
-);
+  const handleOnSubmit = (
+    event: React.MouseEvent<HTMLInputElement, MouseEvent>,
+    inputField: string
+  ): void => {
+    event.preventDefault();
+    setInput(inputField);
+  };
+
+  return (
+    <Wrapper>
+      <InputSection handleOnSubmit={handleOnSubmit} />
+      <Process inputVal={input} />
+    </Wrapper>
+  );
+};
 
 export default App;
